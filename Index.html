@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif;
+      background: #f0f2f5;
+      color: #333;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%);
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .header .subtitle { font-size: 14px; opacity: 0.85; }
+    
+    .toolbar {
+      background: white;
+      padding: 14px 32px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .toolbar label { font-size: 14px; font-weight: 500; color: #4a5568; }
+    .toolbar select {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+    }
+    
+    .tab-bar {
+      display: flex;
+      background: white;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 0 32px;
+    }
+    .tab {
+      padding: 14px 24px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: #718096;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: #2d5a87; }
+    .tab.active { color: #1a365d; border-bottom-color: #2d5a87; }
+    
+    .content { max-width: 1000px; margin: 24px auto; padding: 0 16px; }
+    
+    .report-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .report-title {
+      background: #f7fafc;
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a365d;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .report-title .tag {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .tag.org { background: #fef3c7; color: #92400e; }
+    .tag.period { background: #ebf4ff; color: #2d5a87; margin-left: 6px; }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #f7fafc;
+      text-align: left;
+      padding: 12px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #4a5568;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th.amount { text-align: right; }
+    td { padding: 10px 24px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+    td.amount {
+      text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+    }
+    tr.section-header td {
+      background: #f7fafc;
+      font-weight: 600;
+      color: #2d5a87;
+      font-size: 14px;
+    }
+    tr.sub-section td {
+      background: #fafbfc;
+      font-weight: 500;
+      color: #4a5568;
+      font-size: 13px;
+      padding-left: 32px;
+    }
+    tr.subtotal td {
+      font-weight: 600;
+      border-top: 1px solid #cbd5e0;
+      background: #fafafa;
+    }
+    tr.grand-total td {
+      font-weight: 700;
+      font-size: 15px;
+      border-top: 2px solid #2d5a87;
+      background: #ebf4ff;
+      color: #1a365d;
+    }
+    tr.positive td.amount { color: #276749; }
+    tr.negative td.amount { color: #c53030; }
+    
+    /* 預算欄位顏色覆蓋（優先於 row class） */
+    td.amount.budget-col { color: #6b7280 !important; }
+    td.amount.remaining-positive { color: #276749 !important; font-weight: 500; }
+    td.amount.remaining-negative { color: #c53030 !important; font-weight: 600; }
+    td.amount.remaining-zero { color: #6b7280 !important; }
+    
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .summary-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .summary-card .label { font-size: 13px; color: #718096; margin-bottom: 8px; }
+    .summary-card .value {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .summary-card.income .value { color: #276749; }
+    .summary-card.expense .value { color: #c53030; }
+    .summary-card.net .value { color: #2d5a87; }
+    .summary-card.balance .value { color: #1a365d; }
+    
+    .loading { text-align: center; padding: 60px; color: #a0aec0; font-size: 16px; }
+    .spinner {
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid #2d5a87;
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .bs-container { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .bs-side { border-right: 1px solid #e2e8f0; }
+    .bs-side:last-child { border-right: none; }
+    .bs-side-title {
+      text-align: center;
+      padding: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a365d;
+      background: #f7fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: #a0aec0;
+      font-size: 15px;
+    }
+    
+    .budget-col { color: #6b7280; }
+    .remaining-positive { color: #276749 !important; font-weight: 500; }
+    .remaining-negative { color: #c53030 !important; font-weight: 600; }
+    .remaining-zero { color: #6b7280 !important; }
+    
+    .detail-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ebf4ff;
+      color: #2d5a87;
+      border: 1px solid #bfdbfe;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-left: 6px;
+    }
+    .detail-btn:hover { background: #dbeafe; }
+    
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 { font-size: 16px; color: #1a365d; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #718096;
+      padding: 4px 8px;
+    }
+    .modal-close:hover { color: #1a365d; }
+    .modal-body { padding: 16px 24px; }
+    .modal-body table { width: 100%; }
+    .modal-body th { font-size: 12px; padding: 8px 12px; }
+    .modal-body td { padding: 8px 12px; font-size: 13px; }
+    .modal-summary {
+      padding: 12px 24px;
+      background: #f7fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-around;
+      font-size: 13px;
+    }
+    .modal-summary .item { text-align: center; }
+    .modal-summary .item .label { color: #718096; font-size: 12px; }
+    .modal-summary .item .val { font-weight: 600; font-size: 15px; font-family: 'Consolas', 'Monaco', monospace; }
+    
+    @media (max-width: 768px) {
+      .bs-container { grid-template-columns: 1fr; }
+      .toolbar { padding: 12px 16px; }
+      .tab-bar { padding: 0 16px; }
+      .tab { padding: 12px 16px; font-size: 14px; }
+      .content { padding: 0 8px; }
+      td, th { padding: 6px 8px; font-size: 12px; }
+      td.amount, th.amount { font-size: 11px; }
+      .summary-card .value { font-size: 18px; }
+      .report-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .report-card table { min-width: 600px; }
+      .detail-btn { font-size: 10px; padding: 1px 5px; }
+      tr.section-header td, tr.sub-section td { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>主恩改革宗長老會</h1>
+    <div class="subtitle">財務報表系統</div>
+  </div>
+  
+  <div class="toolbar">
+    <label>組織：</label>
+    <select id="orgSelect" onchange="onFilterChange()">
+      <option value="">載入中...</option>
+    </select>
+    <label>期間：</label>
+    <select id="periodSelect" onchange="onFilterChange()">
+      <option value="">載入中...</option>
+    </select>
+  </div>
+  
+  <div class="tab-bar">
+    <div class="tab active" data-tab="income" onclick="switchTab('income', this)">收支餘絀表</div>
+    <div class="tab" data-tab="balance" onclick="switchTab('balance', this)">資產負債表</div>
+  </div>
+  
+  <div class="content">
+    <div id="loading" class="loading" style="display:none;">
+      <div class="spinner"></div>載入中...
+    </div>
+    <div id="income-view"></div>
+    <div id="balance-view" style="display:none;"></div>
+  </div>
+  
+  <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">詳細帳</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-summary" id="modalSummary"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'income';
+    let filterOptions = null;
+    let budgetCache = null;
+    
+    function fmt(n) {
+      if (n == null || n === '') return '-';
+      return Number(n).toLocaleString('zh-TW');
+    }
+    
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+    
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('show');
+    }
+    
+    function showDetailModal(tag, budgetData, incomeData) {
+      var details = budgetData.detailMap[tag] || [];
+      var actuals = budgetData.actualDetailMap[tag] || [];
+      document.getElementById('modalTitle').textContent = tag + ' — 詳細帳';
+      
+      // 建立實際支出 map: subItem → yearAmount
+      var actualMap = {};
+      actuals.forEach(function(a) {
+        if (!actualMap[a.subItem]) actualMap[a.subItem] = 0;
+        actualMap[a.subItem] += a.yearAmount;
+      });
+      
+      var totalBudget = 0, totalActual = 0;
+      var tbody = '';
+      details.forEach(function(d) {
+        var actual = actualMap[d.subItem] || 0;
+        var remaining = d.budget - actual;
+        totalBudget += d.budget;
+        totalActual += actual;
+        var remClass = remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero');
+        tbody += '<tr><td>' + d.subItem + '</td>' +
+          '<td class="amount budget-col">' + fmt(d.budget) + '</td>' +
+          '<td class="amount">' + fmt(actual) + '</td>' +
+          '<td class="amount ' + remClass + '">' + fmt(remaining) + '</td></tr>';
+      });
+      
+      var totalRemaining = totalBudget - totalActual;
+      var totalRemClass = totalRemaining > 0 ? 'remaining-positive' : (totalRemaining < 0 ? 'remaining-negative' : 'remaining-zero');
+      
+      document.getElementById('modalBody').innerHTML = 
+        '<table><thead><tr><th>子項</th><th class="amount">年預算</th><th class="amount">實際支出</th><th class="amount">剩餘</th></tr></thead>' +
+        '<tbody>' + tbody + '</tbody></table>';
+      
+      document.getElementById('modalSummary').innerHTML = 
+        '<div class="item"><div class="label">年預算</div><div class="val budget-col">' + fmt(totalBudget) + '</div></div>' +
+        '<div class="item"><div class="label">實際支出</div><div class="val">' + fmt(totalActual) + '</div></div>' +
+        '<div class="item"><div class="label">剩餘預算</div><div class="val ' + totalRemClass + '">' + fmt(totalRemaining) + '</div></div>';
+      
+      document.getElementById('detailModal').classList.add('show');
+    }
+    
+    function switchTab(tab, el) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('income-view').style.display = tab === 'income' ? 'block' : 'none';
+      document.getElementById('balance-view').style.display = tab === 'balance' ? 'block' : 'none';
+      loadCurrentTab();
+    }
+    
+    function onFilterChange() { loadCurrentTab(); }
+    
+    function getSelectedOrg() { return document.getElementById('orgSelect').value; }
+    function getSelectedPeriod() { return document.getElementById('periodSelect').value; }
+    
+    function loadCurrentTab() {
+      const org = getSelectedOrg();
+      const period = getSelectedPeriod();
+      if (!org) return;
+      
+      if (currentTab === 'income') {
+        showLoading(true);
+        // 同時載入收支和預算資料
+        var incomeData = null, budget = null;
+        var pending = 2;
+        function checkDone() {
+          pending--;
+          if (pending === 0) {
+            budgetCache = budget;
+            renderIncome(incomeData, budget);
+          }
+        }
+        google.script.run
+          .withSuccessHandler(function(d) { incomeData = d; checkDone(); })
+          .withFailureHandler(function(e) { showLoading(false); alert('錯誤: ' + e.message); })
+          .getIncomeStatement(org, period);
+        google.script.run
+          .withSuccessHandler(function(d) { budget = d; checkDone(); })
+          .withFailureHandler(function(e) { showLoading(false); alert('預算載入失敗: ' + e.message); })
+          .getBudgetData(org);
+      } else {
+        showLoading(true);
+        google.script.run
+          .withSuccessHandler(renderBalance)
+          .withFailureHandler(e => { showLoading(false); alert('錯誤: ' + e.message); })
+          .getBalanceSheet(org, null);
+      }
+    }
+    
+    function renderIncome(data, budget) {
+      showLoading(false);
+      if (!data.income.length && !data.expense.length) {
+        document.getElementById('income-view').innerHTML = '<div class="no-data">此期間無資料</div>';
+        return;
+      }
+      
+      // 建立預算查詢 map
+      // subBudgetMap: 科目細項 → 預算
+      // mainBudgetMap: 科目大類 → 預算（人事費用等只有大類預算的）
+      var subBudgetMap = {};
+      var mainBudgetMap = {};
+      var detailTagMap = {};
+      if (budget && budget.items) {
+        budget.items.forEach(function(b) {
+          if (b.subAccount) {
+            subBudgetMap[b.subAccount] = b.budget;
+            if (b.detailTag) detailTagMap[b.subAccount] = b.detailTag;
+          } else {
+            mainBudgetMap[b.mainAccount] = b.budget;
+          }
+        });
+      }
+      
+      // Group by mainAccount
+      function groupBy(arr) {
+        const g = {};
+        arr.forEach(item => {
+          if (!g[item.mainAccount]) g[item.mainAccount] = [];
+          g[item.mainAccount].push(item);
+        });
+        return g;
+      }
+      
+      const incomeGroups = groupBy(data.income);
+      const expenseGroups = groupBy(data.expense);
+      
+      // 計算收入預算總計
+      var totalIncomeBudget = 0;
+      if (budget && budget.items) {
+        budget.items.forEach(function(b) {
+          if (b.category === '收入' && b.subAccount) totalIncomeBudget += b.budget;
+        });
+      }
+      var totalExpenseBudget = 0;
+      if (budget && budget.items) {
+        budget.items.forEach(function(b) {
+          if (b.category === '支出') totalExpenseBudget += b.budget;
+        });
+      }
+      
+      let html = `
+        <div class="summary-cards">
+          <div class="summary-card income">
+            <div class="label">收入總計</div>
+            <div class="value">${fmt(data.totalIncome)}</div>
+          </div>
+          <div class="summary-card expense">
+            <div class="label">支出總計</div>
+            <div class="value">${fmt(data.totalExpense)}</div>
+          </div>
+          <div class="summary-card net">
+            <div class="label">本期損益</div>
+            <div class="value">${fmt(data.netIncome)}</div>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="report-title">
+            收支餘絀表
+            <div>
+              <span class="tag org">${data.org}</span>
+              <span class="tag period">${data.period}</span>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>科目</th><th class="amount">月結額</th><th class="amount">年結額</th><th class="amount">年預算</th><th class="amount">剩餘預算</th></tr></thead>
+            <tbody>`;
+      
+      // 收入
+      html += `<tr class="section-header"><td colspan="5">📈 收入</td></tr>`;
+      for (const [group, items] of Object.entries(incomeGroups)) {
+        html += `<tr class="sub-section"><td colspan="5">${group}</td></tr>`;
+        items.forEach(i => {
+          var bgt = subBudgetMap[i.subAccount];
+          var remaining = (bgt != null) ? bgt - i.yearAmount : null;
+          var remClass = remaining != null ? (remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+          html += `<tr class="positive"><td style="padding-left:48px">${i.subAccount}</td>
+            <td class="amount">${fmt(i.monthAmount)}</td><td class="amount">${fmt(i.yearAmount)}</td>
+            <td class="amount budget-col">${bgt != null ? fmt(bgt) : '-'}</td>
+            <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td></tr>`;
+        });
+      }
+      var incomeRemaining = totalIncomeBudget ? totalIncomeBudget - data.totalIncome : null;
+      var incomeRemClass = incomeRemaining != null ? (incomeRemaining > 0 ? 'remaining-positive' : (incomeRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+      html += `<tr class="subtotal"><td>收入合計</td>
+        <td class="amount">${fmt(data.totalIncome)}</td><td class="amount">${fmt(data.totalIncome)}</td>
+        <td class="amount budget-col">${totalIncomeBudget ? fmt(totalIncomeBudget) : '-'}</td>
+        <td class="amount ${incomeRemClass}">${incomeRemaining != null ? fmt(incomeRemaining) : '-'}</td></tr>`;
+      
+      // 支出
+      html += `<tr class="section-header"><td colspan="5">📉 支出</td></tr>`;
+      for (const [group, items] of Object.entries(expenseGroups)) {
+        var gtMonth = items.reduce((s, i) => s + i.monthAmount, 0);
+        var gtYear = items.reduce((s, i) => s + i.yearAmount, 0);
+        // 科目大類預算（人事費用等只有大類預算）
+        var groupBgt = mainBudgetMap[group];
+        // 如果沒有大類預算，加總子項預算
+        if (groupBgt == null) {
+          var hasAny = false;
+          var sum = 0;
+          items.forEach(i => {
+            var b = subBudgetMap[i.subAccount];
+            if (b != null) { sum += b; hasAny = true; }
+          });
+          if (hasAny) groupBgt = sum;
+        }
+        var groupRem = (groupBgt != null) ? groupBgt - gtYear : null;
+        var groupRemClass = groupRem != null ? (groupRem > 0 ? 'remaining-positive' : (groupRem < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+        html += `<tr class="sub-section"><td>${group}</td><td class="amount" style="font-size:12px;color:#718096">小計 ${fmt(gtMonth)}</td>
+          <td class="amount" style="font-size:12px;color:#718096">${fmt(gtYear)}</td>
+          <td class="amount budget-col" style="font-size:12px">${groupBgt != null ? fmt(groupBgt) : '-'}</td>
+          <td class="amount ${groupRemClass}" style="font-size:12px">${groupRem != null ? fmt(groupRem) : '-'}</td></tr>`;
+        
+        // 個別子項
+        var hasMainBudgetOnly = mainBudgetMap[group] != null;
+        items.forEach(i => {
+          var bgt = subBudgetMap[i.subAccount];
+          var tag = detailTagMap[i.subAccount];
+          var remaining, remClass;
+          if (hasMainBudgetOnly && bgt == null) {
+            // 大類預算（如人事費用）：子項用大類預算顯示
+            bgt = mainBudgetMap[group];
+            remaining = (bgt != null) ? bgt - i.yearAmount : null;
+            remClass = remaining != null ? (remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+          } else {
+            remaining = (bgt != null) ? bgt - i.yearAmount : null;
+            remClass = remaining != null ? (remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+          }
+          var nameHtml = i.subAccount;
+          if (tag) {
+            nameHtml += ' <button class="detail-btn" onclick="showDetailModal(\'' + tag.replace(/'/g, "\\'") + '\', budgetCache)">📋 明細</button>';
+          }
+          html += `<tr class="negative"><td style="padding-left:48px">${nameHtml}</td>
+            <td class="amount">${fmt(i.monthAmount)}</td><td class="amount">${fmt(i.yearAmount)}</td>
+            <td class="amount budget-col">${bgt != null ? fmt(bgt) : '-'}</td>
+            <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td></tr>`;
+        });
+      }
+      var expenseRemaining = totalExpenseBudget ? totalExpenseBudget - data.totalExpense : null;
+      var expenseRemClass = expenseRemaining != null ? (expenseRemaining > 0 ? 'remaining-positive' : (expenseRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+      html += `<tr class="subtotal"><td>支出合計</td>
+        <td class="amount">${fmt(data.totalExpense)}</td><td class="amount">${fmt(data.totalExpense)}</td>
+        <td class="amount budget-col">${totalExpenseBudget ? fmt(totalExpenseBudget) : '-'}</td>
+        <td class="amount ${expenseRemClass}">${expenseRemaining != null ? fmt(expenseRemaining) : '-'}</td></tr>`;
+      
+      // 本期損益
+      var netBudget = totalIncomeBudget && totalExpenseBudget ? totalIncomeBudget - totalExpenseBudget : null;
+      html += `<tr class="grand-total"><td>本期損益</td>
+        <td class="amount">${fmt(data.netIncome)}</td><td class="amount">${fmt(data.netIncome)}</td>
+        <td class="amount budget-col">${netBudget != null ? fmt(netBudget) : '-'}</td>
+        <td class="amount">-</td></tr>`;
+      
+      html += `</tbody></table></div>`;
+      document.getElementById('income-view').innerHTML = html;
+    }
+    
+    function renderBalance(data) {
+      showLoading(false);
+      if (!data.assets.length && !data.liabilities.length && !data.equity.length) {
+        document.getElementById('balance-view').innerHTML = '<div class="no-data">此期間無資料</div>';
+        return;
+      }
+      
+      function groupBy(arr) {
+        const g = {};
+        arr.forEach(item => {
+          if (!g[item.mainAccount]) g[item.mainAccount] = [];
+          g[item.mainAccount].push(item);
+        });
+        return g;
+      }
+      
+      const assetG = groupBy(data.assets);
+      const liabG = groupBy(data.liabilities);
+      const equityG = groupBy(data.equity);
+      
+      let html = `
+        <div class="summary-cards">
+          <div class="summary-card balance">
+            <div class="label">資產總計</div>
+            <div class="value">${fmt(data.totalAssets)}</div>
+          </div>
+          <div class="summary-card expense">
+            <div class="label">負債總計</div>
+            <div class="value">${fmt(data.totalLiabilities)}</div>
+          </div>
+          <div class="summary-card net">
+            <div class="label">基金及餘絀</div>
+            <div class="value">${fmt(data.totalEquity)}</div>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="report-title">
+            資產負債表
+            <div>
+              <span class="tag org">${data.org}</span>
+              <span class="tag period">${data.period}</span>
+            </div>
+          </div>
+          <div class="bs-container">
+            <div class="bs-side">
+              <div class="bs-side-title">資　產</div>
+              <table>`;
+      
+      for (const [group, items] of Object.entries(assetG)) {
+        html += `<tr class="section-header"><td colspan="2">${group}</td></tr>`;
+        items.forEach(i => {
+          html += `<tr><td style="padding-left:32px">${i.subAccount}</td><td class="amount">${fmt(i.amount)}</td></tr>`;
+        });
+      }
+      html += `<tr class="grand-total"><td>資產總計</td><td class="amount">${fmt(data.totalAssets)}</td></tr>`;
+      html += `</table></div>`;
+      
+      // 右側
+      html += `<div class="bs-side"><div class="bs-side-title">負債及基金餘絀</div><table>`;
+      for (const [group, items] of Object.entries(liabG)) {
+        html += `<tr class="section-header"><td colspan="2">${group}</td></tr>`;
+        items.forEach(i => {
+          html += `<tr><td style="padding-left:32px">${i.subAccount}</td><td class="amount">${fmt(i.amount)}</td></tr>`;
+        });
+      }
+      html += `<tr class="subtotal"><td>負債合計</td><td class="amount">${fmt(data.totalLiabilities)}</td></tr>`;
+      
+      for (const [group, items] of Object.entries(equityG)) {
+        html += `<tr class="section-header"><td colspan="2">${group}</td></tr>`;
+        items.forEach(i => {
+          html += `<tr><td style="padding-left:32px">${i.subAccount}</td><td class="amount">${fmt(i.amount)}</td></tr>`;
+        });
+      }
+      html += `<tr class="subtotal"><td>基金及餘絀合計</td><td class="amount">${fmt(data.totalEquity)}</td></tr>`;
+      html += `<tr class="grand-total"><td>負債及資本總計</td><td class="amount">${fmt(data.totalLiabEquity)}</td></tr>`;
+      html += `</table></div></div></div>`;
+      
+      document.getElementById('balance-view').innerHTML = html;
+    }
+    
+    // 初始化
+    function init() {
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(opts => {
+          filterOptions = opts;
+          const orgSel = document.getElementById('orgSelect');
+          const periodSel = document.getElementById('periodSelect');
+          
+          orgSel.innerHTML = opts.organizations.map(o => `<option value="${o}">${o}</option>`).join('');
+          periodSel.innerHTML = opts.incomePeriods.map(p => `<option value="${p}">${p}</option>`).join('');
+          
+          showLoading(false);
+          loadCurrentTab();
+        })
+        .withFailureHandler(e => { showLoading(false); alert('初始化失敗: ' + e.message); })
+        .getFilterOptions();
+    }
+    
+    init();
+  </script>
+</body>
+</html>

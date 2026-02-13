@@ -1,0 +1,12 @@
+# Apps Script
+.clasp.json
+
+# Node modules (if any)
+node_modules/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
