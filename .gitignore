@@ -1,6 +1,9 @@
 # Apps Script
 .clasp.json
 
+# CSV data files
+*.csv
+
 # Node modules (if any)
 node_modules/
 
