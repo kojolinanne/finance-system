@@ -4,6 +4,11 @@
 # CSV data files
 *.csv
 
+# JSON data files & temp scripts
+*_expenses.json
+extract_*.py
+build_*.py
+
 # Node modules (if any)
 node_modules/
 
