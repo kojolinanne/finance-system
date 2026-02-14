@@ -342,7 +342,7 @@
     function showDetailModal(tag, budgetData, incomeData) {
       var details = budgetData.detailMap[tag] || [];
       var actuals = budgetData.actualDetailMap[tag] || [];
-      document.getElementById('modalTitle').textContent = tag + ' — 詳細帳';
+      document.getElementById('modalTitle').textContent = tag + ' — 詳細分類帳';
       
       // 建立實際支出 map: subItem → yearAmount
       var actualMap = {};
@@ -369,7 +369,7 @@
       var totalRemClass = totalRemaining > 0 ? 'remaining-positive' : (totalRemaining < 0 ? 'remaining-negative' : 'remaining-zero');
       
       document.getElementById('modalBody').innerHTML = 
-        '<table><thead><tr><th>子項</th><th class="amount">年預算</th><th class="amount">實際支出</th><th class="amount">剩餘</th></tr></thead>' +
+        '<table><thead><tr><th>摘要</th><th class="amount">年預算</th><th class="amount">實際支出</th><th class="amount">剩餘</th></tr></thead>' +
         '<tbody>' + tbody + '</tbody></table>';
       
       document.getElementById('modalSummary').innerHTML = 

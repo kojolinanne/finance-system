@@ -21,6 +21,19 @@ function cellToString(val) {
   return String(val);
 }
 
+// 將傳票日期（如 1150126）轉換為期間格式（如 115年1月）
+function voucherDateToPeriod(dateStr) {
+  var d = String(dateStr).trim();
+  var year = d.substring(0, 3);
+  var month = parseInt(d.substring(3, 5), 10);
+  return year + '年' + month + '月';
+}
+
+// 處理帶逗號的金額字串
+function parseAmount(val) {
+  return Number(String(val).replace(/,/g, '')) || 0;
+}
+
 // 讀取設定工作表
 function getSettings() {
   var ss = getSpreadsheet();
@@ -200,25 +213,36 @@ function getBudgetData(org) {
     }
   }
   
-  // 讀取收支明細（實際支出子項）
-  var actualDetailSheet = ss.getSheetByName('收支明細');
+  // 讀取詳細分類帳（實際支出子項）
+  // 欄位: A=組織, B=科目, C=傳票日期, D=日張, E=項號, F=摘要, G=金額, H=借貸, I=增減, J=餘額, K=科目名稱
+  var actualDetailSheet = ss.getSheetByName('詳細分類帳');
   var actualDetailMap = {};
   if (actualDetailSheet) {
     var adData = actualDetailSheet.getDataRange().getValues();
     var adRows = adData.slice(1);
     for (var k = 0; k < adRows.length; k++) {
       var ar = adRows[k];
+      var adCode = String(ar[1]).trim();
+      // 只取支出類科目（代碼以 5 開頭）
+      if (adCode.charAt(0) !== '5') continue;
+      
       var adOrg = String(ar[0]).trim();
       if (org && adOrg !== org) continue;
       
-      var adParent = String(ar[2]).trim();
-      var adPeriod = String(ar[1]).trim();
+      var adParent = String(ar[10]).trim(); // 科目名稱
+      var adPeriod = voucherDateToPeriod(ar[2]); // 傳票日期轉期間
+      var adSummary = String(ar[5]).trim(); // 摘要
+      var adAmount = parseAmount(ar[6]); // 金額
+      var adBalance = parseAmount(ar[9]); // 餘額
+      
+      if (!adSummary) adSummary = adParent;
+      
       if (!actualDetailMap[adParent]) actualDetailMap[adParent] = [];
       actualDetailMap[adParent].push({
         period: adPeriod,
-        subItem: String(ar[3]).trim(),
-        monthAmount: Number(ar[4]) || 0,
-        yearAmount: Number(ar[5]) || 0
+        subItem: adSummary,
+        monthAmount: adAmount,
+        yearAmount: adBalance
       });
     }
   }
