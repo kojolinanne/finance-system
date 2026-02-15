@@ -295,6 +295,11 @@
     <select id="periodSelect" onchange="onFilterChange()">
       <option value="">載入中...</option>
     </select>
+    <label>顯示模式：</label>
+    <select id="missionMode" onchange="onMissionModeChange()">
+      <option value="all">包含全部宣教奉獻</option>
+      <option value="deduct">扣除特別宣教奉獻</option>
+    </select>
   </div>
   
   <div class="tab-bar">
@@ -325,6 +330,7 @@
     let currentTab = 'income';
     let filterOptions = null;
     let budgetCache = null;
+    let incomeCache = null;
     
     function fmt(n) {
       if (n == null || n === '') return '-';
@@ -448,6 +454,14 @@
     
     function getSelectedOrg() { return document.getElementById('orgSelect').value; }
     function getSelectedPeriod() { return document.getElementById('periodSelect').value; }
+    function getMissionMode() { return document.getElementById('missionMode').value; }
+    
+    function onMissionModeChange() {
+      // 用快取資料重新渲染，不需重新呼叫後端
+      if (currentTab === 'income' && incomeCache && budgetCache) {
+        renderIncome(incomeCache, budgetCache);
+      }
+    }
     
     function loadCurrentTab() {
       const org = getSelectedOrg();
@@ -463,6 +477,7 @@
           pending--;
           if (pending === 0) {
             budgetCache = budget;
+            incomeCache = incomeData;
             renderIncome(incomeData, budget);
           }
         }
@@ -489,6 +504,35 @@
         document.getElementById('income-view').innerHTML = '<div class="no-data">此期間無資料</div>';
         return;
       }
+      
+      var deductMode = getMissionMode() === 'deduct';
+      
+      // 若為扣除模式，調整收入項目金額
+      var adjustedIncome = data.income.map(function(i) {
+        if (deductMode && i.missionDeductMonth) {
+          return {
+            org: i.org,
+            period: i.period,
+            category: i.category,
+            mainAccount: i.mainAccount,
+            subAccount: i.subAccount,
+            monthAmount: i.monthAmount - i.missionDeductMonth,
+            yearAmount: i.yearAmount - i.missionDeductYear,
+            missionDeductMonth: i.missionDeductMonth,
+            missionDeductYear: i.missionDeductYear
+          };
+        }
+        return i;
+      });
+      
+      // 計算調整後的收入總計
+      var adjustedTotalIncomeMonth = deductMode && data.totalIncomeDeductMonth
+        ? data.totalIncome - data.totalIncomeDeductMonth
+        : data.totalIncome;
+      var adjustedTotalIncomeYear = deductMode && data.totalIncomeDeductYear
+        ? data.totalIncome - data.totalIncomeDeductYear
+        : data.totalIncome;
+      var adjustedNetIncome = adjustedTotalIncomeMonth - data.totalExpense;
       
       // 建立預算查詢 map
       // subBudgetMap: 科目細項 → 預算
@@ -517,7 +561,6 @@
         return g;
       }
       
-      const incomeGroups = groupBy(data.income);
       const expenseGroups = groupBy(data.expense);
       
       // 計算收入預算總計
@@ -537,16 +580,16 @@
       let html = `
         <div class="summary-cards">
           <div class="summary-card income">
-            <div class="label">收入總計</div>
-            <div class="value">${fmt(data.totalIncome)}</div>
+            <div class="label">收入總計${deductMode ? '（扣除特別宣教）' : ''}</div>
+            <div class="value">${fmt(adjustedTotalIncomeMonth)}</div>
           </div>
           <div class="summary-card expense">
             <div class="label">支出總計</div>
             <div class="value">${fmt(data.totalExpense)}</div>
           </div>
           <div class="summary-card net">
-            <div class="label">本期損益</div>
-            <div class="value">${fmt(data.netIncome)}</div>
+            <div class="label">本期損益${deductMode ? '（扣除特別宣教）' : ''}</div>
+            <div class="value">${fmt(adjustedNetIncome)}</div>
           </div>
         </div>
         <div class="report-card">
@@ -562,7 +605,8 @@
             <tbody>`;
       
       // 收入
-      html += `<tr class="section-header"><td colspan="6">📈 收入</td></tr>`;
+      html += `<tr class="section-header"><td colspan="6">📈 收入${deductMode ? '（扣除特別宣教奉獻）' : ''}</td></tr>`;
+      const incomeGroups = groupBy(adjustedIncome);
       for (const [group, items] of Object.entries(incomeGroups)) {
         html += `<tr class="sub-section"><td colspan="6">${group}</td></tr>`;
         items.forEach(i => {
@@ -577,11 +621,11 @@
             <td class="amount">${usage}</td></tr>`;
         });
       }
-      var incomeRemaining = totalIncomeBudget ? totalIncomeBudget - data.totalIncome : null;
+      var incomeRemaining = totalIncomeBudget ? totalIncomeBudget - adjustedTotalIncomeYear : null;
       var incomeRemClass = incomeRemaining != null ? (incomeRemaining > 0 ? 'remaining-positive' : (incomeRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
-      var incomeUsage = fmtPct(data.totalIncome, totalIncomeBudget);
+      var incomeUsage = fmtPct(adjustedTotalIncomeYear, totalIncomeBudget);
       html += `<tr class="subtotal"><td>收入合計</td>
-        <td class="amount">${fmt(data.totalIncome)}</td><td class="amount">${fmt(data.totalIncome)}</td>
+        <td class="amount">${fmt(adjustedTotalIncomeMonth)}</td><td class="amount">${fmt(adjustedTotalIncomeYear)}</td>
         <td class="amount budget-col">${totalIncomeBudget ? fmt(totalIncomeBudget) : '-'}</td>
         <td class="amount ${incomeRemClass}">${incomeRemaining != null ? fmt(incomeRemaining) : '-'}</td>
         <td class="amount">${incomeUsage}</td></tr>`;
@@ -651,9 +695,9 @@
       
       // 本期損益
       var netBudget = totalIncomeBudget && totalExpenseBudget ? totalIncomeBudget - totalExpenseBudget : null;
-      var netUsage = fmtPct(data.netIncome, netBudget);
-      html += `<tr class="grand-total"><td>本期損益</td>
-        <td class="amount">${fmt(data.netIncome)}</td><td class="amount">${fmt(data.netIncome)}</td>
+      var netUsage = fmtPct(adjustedNetIncome, netBudget);
+      html += `<tr class="grand-total"><td>本期損益${deductMode ? '（扣除特別宣教）' : ''}</td>
+        <td class="amount">${fmt(adjustedNetIncome)}</td><td class="amount">${fmt(adjustedNetIncome)}</td>
         <td class="amount budget-col">${netBudget != null ? fmt(netBudget) : '-'}</td>
         <td class="amount">-</td>
         <td class="amount">${netUsage}</td></tr>`;

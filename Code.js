@@ -92,6 +92,8 @@ function getIncomeStatement(org, period) {
   var totalIncome = 0;
   var totalExpense = 0;
   var netIncome = 0;
+  var totalIncomeDeductMonth = 0;
+  var totalIncomeDeductYear = 0;
   
   // 長執會模式：暫存人事費用以便彙總
   var personnelMonth = 0;
@@ -106,6 +108,10 @@ function getIncomeStatement(org, period) {
     if (org && rowOrg !== org) continue;
     if (period && rowPeriod !== period) continue;
     
+    // H欄(index 7)=特別宣教扣除月結額, I欄(index 8)=特別宣教扣除年結額
+    var deductMonth = Number(row[7]) || 0;
+    var deductYear = Number(row[8]) || 0;
+    
     var item = {
       org: rowOrg,
       period: rowPeriod,
@@ -113,7 +119,9 @@ function getIncomeStatement(org, period) {
       mainAccount: String(row[3]).trim(),
       subAccount: String(row[4]).trim(),
       monthAmount: Number(row[5]) || 0,
-      yearAmount: Number(row[6]) || 0
+      yearAmount: Number(row[6]) || 0,
+      missionDeductMonth: deductMonth,
+      missionDeductYear: deductYear
     };
     
     if (category === '收入') {
@@ -128,6 +136,8 @@ function getIncomeStatement(org, period) {
       }
     } else if (category === '收入小計') {
       totalIncome = item.monthAmount;
+      totalIncomeDeductMonth = deductMonth;
+      totalIncomeDeductYear = deductYear;
     } else if (category === '支出小計') {
       totalExpense = item.monthAmount;
     } else if (category === '本期損益') {
@@ -162,6 +172,8 @@ function getIncomeStatement(org, period) {
     totalIncome: totalIncome,
     totalExpense: totalExpense,
     netIncome: netIncome,
+    totalIncomeDeductMonth: totalIncomeDeductMonth,
+    totalIncomeDeductYear: totalIncomeDeductYear,
     elderMode: settings.elderMode,
     org: org || '全部',
     period: period || '全部'
