@@ -243,6 +243,7 @@ function getBudgetData(org) {
       
       var adParent = String(ar[10]).trim(); // 科目名稱
       var adPeriod = voucherDateToPeriod(ar[2]); // 傳票日期轉期間
+      var adVoucherDate = String(ar[2]).trim(); // 傳票日期原始值（如 1150126）
       var adLevel2 = String(ar[11]).trim(); // 分類明細科目名稱（第二層）
       var adLevel3 = String(ar[5]).trim(); // 摘要（第三層）
       var adAmount = parseAmount(ar[6]); // 金額
@@ -254,6 +255,7 @@ function getBudgetData(org) {
       if (!actualDetailMap[adParent]) actualDetailMap[adParent] = [];
       actualDetailMap[adParent].push({
         period: adPeriod,
+        voucherDate: adVoucherDate,
         level2: adLevel2,
         level3: adLevel3,
         budgetKey: budgetKey,

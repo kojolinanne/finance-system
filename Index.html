@@ -353,6 +353,15 @@
       document.getElementById('detailModal').classList.remove('show');
     }
     
+    function formatVoucherDate(dateStr) {
+      var d = String(dateStr).trim();
+      if (d.length < 7) return d;
+      var year = d.substring(0, 3);
+      var month = d.substring(3, 5);
+      var day = d.substring(5, 7);
+      return year + '/' + month + '/' + day;
+    }
+    
     function showDetailModal(tag, budgetData, fallbackBudget) {
       budgetData = budgetData || {};
       var details = (budgetData.detailMap && budgetData.detailMap[tag]) ? budgetData.detailMap[tag] : [];
@@ -366,71 +375,87 @@
         return;
       }
       
-      // 建立實際支出 map: budgetKey → yearAmount
-      var actualMap = {};
-      var summaryMap = {};
-      var hasLevel2Map = {};
+      // 按 budgetKey（分類明細）分組，保留逐筆記錄
+      var groupMap = {};
+      var totalActual = 0;
       actuals.forEach(function(a) {
         var key = a.budgetKey || a.level2 || a.level3 || '';
         if (!key) return;
-        if (!actualMap[key]) actualMap[key] = 0;
-        actualMap[key] += a.yearAmount || 0;
-        if (a.level3) {
-          if (!summaryMap[key]) summaryMap[key] = {};
-          summaryMap[key][a.level3] = true;
-        }
-        if (a.level2) hasLevel2Map[key] = true;
+        if (!groupMap[key]) groupMap[key] = [];
+        groupMap[key].push(a);
+        totalActual += a.yearAmount || 0;
       });
       
-      function getSummaryText(key, showSummary) {
-        if (!showSummary) return '-';
-        var set = summaryMap[key];
-        if (!set) return '-';
-        var list = Object.keys(set);
-        return list.length ? list.join('、') : '-';
-      }
-      
-      var totalBudget = 0, totalActual = 0;
-      var tbody = '';
-      var usedKeys = {};
-      
+      // 建立預算 map
+      var budgetMap = {};
+      var totalBudget = 0;
       details.forEach(function(d) {
-        var key = d.subItem;
-        usedKeys[key] = true;
-        var actual = actualMap[key] || 0;
-        var remaining = d.budget - actual;
+        budgetMap[d.subItem] = d.budget;
         totalBudget += d.budget;
-        totalActual += actual;
-        var remClass = remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero');
-        var summaryText = getSummaryText(key, hasLevel2Map[key]);
-        tbody += '<tr><td>' + key + '</td>' +
-          '<td>' + summaryText + '</td>' +
-          '<td class="amount budget-col">' + fmt(d.budget) + '</td>' +
-          '<td class="amount">' + fmt(actual) + '</td>' +
-          '<td class="amount ' + remClass + '">' + fmt(remaining) + '</td></tr>';
       });
-      
       if (!details.length && fallbackBudget != null && !isNaN(fallbackBudget)) {
         totalBudget = Number(fallbackBudget) || 0;
       }
       
-      Object.keys(actualMap).forEach(function(key) {
-        if (usedKeys[key]) return;
-        var actual = actualMap[key] || 0;
-        totalActual += actual;
-        var summaryText = getSummaryText(key, hasLevel2Map[key]);
-        tbody += '<tr><td>' + key + '</td>' +
-          '<td>' + summaryText + '</td>' +
+      var tbody = '';
+      var renderedKeys = {};
+      
+      // 先按預算明細的順序渲染
+      details.forEach(function(d) {
+        var key = d.subItem;
+        renderedKeys[key] = true;
+        var items = groupMap[key] || [];
+        var subtotal = 0;
+        items.forEach(function(i) { subtotal += i.yearAmount || 0; });
+        var remaining = d.budget - subtotal;
+        var remClass = remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero');
+        
+        // 分類標題行
+        tbody += '<tr class="section-header"><td colspan="3">' + key + '</td>' +
+          '<td class="amount budget-col">' + fmt(d.budget) + '</td>' +
+          '<td class="amount">' + fmt(subtotal) + '</td>' +
+          '<td class="amount ' + remClass + '">' + fmt(remaining) + '</td></tr>';
+        
+        // 逐筆明細（按傳票日期排序）
+        items.sort(function(a, b) { return String(a.voucherDate || '').localeCompare(String(b.voucherDate || '')); });
+        items.forEach(function(item) {
+          tbody += '<tr><td style="padding-left:24px;color:#718096;font-size:12px">' + formatVoucherDate(item.voucherDate || '') + '</td>' +
+            '<td>' + (item.level3 || item.level2 || '-') + '</td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td class="amount">' + fmt(item.yearAmount) + '</td>' +
+            '<td></td></tr>';
+        });
+      });
+      
+      // 渲染沒有預算的實際支出
+      Object.keys(groupMap).forEach(function(key) {
+        if (renderedKeys[key]) return;
+        var items = groupMap[key];
+        var subtotal = 0;
+        items.forEach(function(i) { subtotal += i.yearAmount || 0; });
+        
+        tbody += '<tr class="section-header"><td colspan="3">' + key + '</td>' +
           '<td class="amount budget-col">-</td>' +
-          '<td class="amount">' + fmt(actual) + '</td>' +
+          '<td class="amount">' + fmt(subtotal) + '</td>' +
           '<td class="amount">-</td></tr>';
+        
+        items.sort(function(a, b) { return String(a.voucherDate || '').localeCompare(String(b.voucherDate || '')); });
+        items.forEach(function(item) {
+          tbody += '<tr><td style="padding-left:24px;color:#718096;font-size:12px">' + formatVoucherDate(item.voucherDate || '') + '</td>' +
+            '<td>' + (item.level3 || item.level2 || '-') + '</td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td class="amount">' + fmt(item.yearAmount) + '</td>' +
+            '<td></td></tr>';
+        });
       });
       
       var totalRemaining = totalBudget - totalActual;
       var totalRemClass = totalRemaining > 0 ? 'remaining-positive' : (totalRemaining < 0 ? 'remaining-negative' : 'remaining-zero');
       
       document.getElementById('modalBody').innerHTML = 
-        '<table><thead><tr><th>分類明細</th><th>摘要</th><th class="amount">年預算</th><th class="amount">實際支出</th><th class="amount">剩餘</th></tr></thead>' +
+        '<table><thead><tr><th>傳票日期</th><th>摘要</th><th></th><th class="amount">年預算</th><th class="amount">金額</th><th class="amount">剩餘</th></tr></thead>' +
         '<tbody>' + tbody + '</tbody></table>';
       
       document.getElementById('modalSummary').innerHTML = 
