@@ -246,7 +246,7 @@ function getBudgetData(org) {
         level3: adLevel3,
         budgetKey: budgetKey,
         monthAmount: adAmount,
-        yearAmount: adBalance
+        yearAmount: adAmount
       });
     }
   }
