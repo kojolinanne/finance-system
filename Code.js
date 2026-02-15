@@ -214,7 +214,7 @@ function getBudgetData(org) {
   }
   
   // 讀取詳細分類帳（實際支出子項）
-  // 欄位: A=組織, B=科目, C=傳票日期, D=日張, E=項號, F=摘要, G=金額, H=借貸, I=增減, J=餘額, K=科目名稱
+  // 欄位: A=組織, B=科目, C=傳票日期, D=日張, E=項號, F=摘要, G=金額, H=借貸, I=增減, J=餘額, K=科目名稱, L=分類明細科目名稱
   var actualDetailSheet = ss.getSheetByName('詳細分類帳');
   var actualDetailMap = {};
   if (actualDetailSheet) {
@@ -231,16 +231,20 @@ function getBudgetData(org) {
       
       var adParent = String(ar[10]).trim(); // 科目名稱
       var adPeriod = voucherDateToPeriod(ar[2]); // 傳票日期轉期間
-      var adSummary = String(ar[5]).trim(); // 摘要
+      var adLevel2 = String(ar[11]).trim(); // 分類明細科目名稱（第二層）
+      var adLevel3 = String(ar[5]).trim(); // 摘要（第三層）
       var adAmount = parseAmount(ar[6]); // 金額
       var adBalance = parseAmount(ar[9]); // 餘額
       
-      if (!adSummary) adSummary = adParent;
+      var budgetKey = adLevel2 || adLevel3 || adParent;
+      if (!budgetKey) continue;
       
       if (!actualDetailMap[adParent]) actualDetailMap[adParent] = [];
       actualDetailMap[adParent].push({
         period: adPeriod,
-        subItem: adSummary,
+        level2: adLevel2,
+        level3: adLevel3,
+        budgetKey: budgetKey,
         monthAmount: adAmount,
         yearAmount: adBalance
       });

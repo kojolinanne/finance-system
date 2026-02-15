@@ -330,6 +330,14 @@
       if (n == null || n === '') return '-';
       return Number(n).toLocaleString('zh-TW');
     }
+
+    function fmtPct(used, budget) {
+      if (budget == null || budget === '' || Number(budget) === 0) return '-';
+      if (used == null || used === '') return '-';
+      var pct = (Number(used) / Number(budget)) * 100;
+      if (!isFinite(pct)) return '-';
+      return pct.toFixed(1) + '%';
+    }
     
     function showLoading(show) {
       document.getElementById('loading').style.display = show ? 'block' : 'none';
@@ -339,37 +347,84 @@
       document.getElementById('detailModal').classList.remove('show');
     }
     
-    function showDetailModal(tag, budgetData, incomeData) {
-      var details = budgetData.detailMap[tag] || [];
-      var actuals = budgetData.actualDetailMap[tag] || [];
+    function showDetailModal(tag, budgetData, fallbackBudget) {
+      budgetData = budgetData || {};
+      var details = (budgetData.detailMap && budgetData.detailMap[tag]) ? budgetData.detailMap[tag] : [];
+      var actuals = (budgetData.actualDetailMap && budgetData.actualDetailMap[tag]) ? budgetData.actualDetailMap[tag] : [];
       document.getElementById('modalTitle').textContent = tag + ' — 詳細分類帳';
       
-      // 建立實際支出 map: subItem → yearAmount
+      if (!details.length && !actuals.length) {
+        document.getElementById('modalBody').innerHTML = '<div class="no-data">此科目無明細資料</div>';
+        document.getElementById('modalSummary').innerHTML = '';
+        document.getElementById('detailModal').classList.add('show');
+        return;
+      }
+      
+      // 建立實際支出 map: budgetKey → yearAmount
       var actualMap = {};
+      var summaryMap = {};
+      var hasLevel2Map = {};
       actuals.forEach(function(a) {
-        if (!actualMap[a.subItem]) actualMap[a.subItem] = 0;
-        actualMap[a.subItem] += a.yearAmount;
+        var key = a.budgetKey || a.level2 || a.level3 || '';
+        if (!key) return;
+        if (!actualMap[key]) actualMap[key] = 0;
+        actualMap[key] += a.yearAmount || 0;
+        if (a.level3) {
+          if (!summaryMap[key]) summaryMap[key] = {};
+          summaryMap[key][a.level3] = true;
+        }
+        if (a.level2) hasLevel2Map[key] = true;
       });
+      
+      function getSummaryText(key, showSummary) {
+        if (!showSummary) return '-';
+        var set = summaryMap[key];
+        if (!set) return '-';
+        var list = Object.keys(set);
+        return list.length ? list.join('、') : '-';
+      }
       
       var totalBudget = 0, totalActual = 0;
       var tbody = '';
+      var usedKeys = {};
+      
       details.forEach(function(d) {
-        var actual = actualMap[d.subItem] || 0;
+        var key = d.subItem;
+        usedKeys[key] = true;
+        var actual = actualMap[key] || 0;
         var remaining = d.budget - actual;
         totalBudget += d.budget;
         totalActual += actual;
         var remClass = remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero');
-        tbody += '<tr><td>' + d.subItem + '</td>' +
+        var summaryText = getSummaryText(key, hasLevel2Map[key]);
+        tbody += '<tr><td>' + key + '</td>' +
+          '<td>' + summaryText + '</td>' +
           '<td class="amount budget-col">' + fmt(d.budget) + '</td>' +
           '<td class="amount">' + fmt(actual) + '</td>' +
           '<td class="amount ' + remClass + '">' + fmt(remaining) + '</td></tr>';
+      });
+      
+      if (!details.length && fallbackBudget != null && !isNaN(fallbackBudget)) {
+        totalBudget = Number(fallbackBudget) || 0;
+      }
+      
+      Object.keys(actualMap).forEach(function(key) {
+        if (usedKeys[key]) return;
+        var actual = actualMap[key] || 0;
+        totalActual += actual;
+        var summaryText = getSummaryText(key, hasLevel2Map[key]);
+        tbody += '<tr><td>' + key + '</td>' +
+          '<td>' + summaryText + '</td>' +
+          '<td class="amount budget-col">-</td>' +
+          '<td class="amount">' + fmt(actual) + '</td>' +
+          '<td class="amount">-</td></tr>';
       });
       
       var totalRemaining = totalBudget - totalActual;
       var totalRemClass = totalRemaining > 0 ? 'remaining-positive' : (totalRemaining < 0 ? 'remaining-negative' : 'remaining-zero');
       
       document.getElementById('modalBody').innerHTML = 
-        '<table><thead><tr><th>摘要</th><th class="amount">年預算</th><th class="amount">實際支出</th><th class="amount">剩餘</th></tr></thead>' +
+        '<table><thead><tr><th>分類明細</th><th>摘要</th><th class="amount">年預算</th><th class="amount">實際支出</th><th class="amount">剩餘</th></tr></thead>' +
         '<tbody>' + tbody + '</tbody></table>';
       
       document.getElementById('modalSummary').innerHTML = 
@@ -503,32 +558,36 @@
             </div>
           </div>
           <table>
-            <thead><tr><th>科目</th><th class="amount">月結額</th><th class="amount">年結額</th><th class="amount">年預算</th><th class="amount">剩餘預算</th></tr></thead>
+            <thead><tr><th>科目</th><th class="amount">月結額</th><th class="amount">年結額</th><th class="amount">年預算</th><th class="amount">剩餘預算</th><th class="amount">預算使用率</th></tr></thead>
             <tbody>`;
       
       // 收入
-      html += `<tr class="section-header"><td colspan="5">📈 收入</td></tr>`;
+      html += `<tr class="section-header"><td colspan="6">📈 收入</td></tr>`;
       for (const [group, items] of Object.entries(incomeGroups)) {
-        html += `<tr class="sub-section"><td colspan="5">${group}</td></tr>`;
+        html += `<tr class="sub-section"><td colspan="6">${group}</td></tr>`;
         items.forEach(i => {
           var bgt = subBudgetMap[i.subAccount];
           var remaining = (bgt != null) ? bgt - i.yearAmount : null;
           var remClass = remaining != null ? (remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+          var usage = fmtPct(i.yearAmount, bgt);
           html += `<tr class="positive"><td style="padding-left:48px">${i.subAccount}</td>
             <td class="amount">${fmt(i.monthAmount)}</td><td class="amount">${fmt(i.yearAmount)}</td>
             <td class="amount budget-col">${bgt != null ? fmt(bgt) : '-'}</td>
-            <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td></tr>`;
+            <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td>
+            <td class="amount">${usage}</td></tr>`;
         });
       }
       var incomeRemaining = totalIncomeBudget ? totalIncomeBudget - data.totalIncome : null;
       var incomeRemClass = incomeRemaining != null ? (incomeRemaining > 0 ? 'remaining-positive' : (incomeRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+      var incomeUsage = fmtPct(data.totalIncome, totalIncomeBudget);
       html += `<tr class="subtotal"><td>收入合計</td>
         <td class="amount">${fmt(data.totalIncome)}</td><td class="amount">${fmt(data.totalIncome)}</td>
         <td class="amount budget-col">${totalIncomeBudget ? fmt(totalIncomeBudget) : '-'}</td>
-        <td class="amount ${incomeRemClass}">${incomeRemaining != null ? fmt(incomeRemaining) : '-'}</td></tr>`;
+        <td class="amount ${incomeRemClass}">${incomeRemaining != null ? fmt(incomeRemaining) : '-'}</td>
+        <td class="amount">${incomeUsage}</td></tr>`;
       
       // 支出
-      html += `<tr class="section-header"><td colspan="5">📉 支出</td></tr>`;
+      html += `<tr class="section-header"><td colspan="6">📉 支出</td></tr>`;
       for (const [group, items] of Object.entries(expenseGroups)) {
         var gtMonth = items.reduce((s, i) => s + i.monthAmount, 0);
         var gtYear = items.reduce((s, i) => s + i.yearAmount, 0);
@@ -546,10 +605,12 @@
         }
         var groupRem = (groupBgt != null) ? groupBgt - gtYear : null;
         var groupRemClass = groupRem != null ? (groupRem > 0 ? 'remaining-positive' : (groupRem < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+        var groupUsage = fmtPct(gtYear, groupBgt);
         html += `<tr class="sub-section"><td>${group}</td><td class="amount" style="font-size:12px;color:#718096">小計 ${fmt(gtMonth)}</td>
           <td class="amount" style="font-size:12px;color:#718096">${fmt(gtYear)}</td>
           <td class="amount budget-col" style="font-size:12px">${groupBgt != null ? fmt(groupBgt) : '-'}</td>
-          <td class="amount ${groupRemClass}" style="font-size:12px">${groupRem != null ? fmt(groupRem) : '-'}</td></tr>`;
+          <td class="amount ${groupRemClass}" style="font-size:12px">${groupRem != null ? fmt(groupRem) : '-'}</td>
+          <td class="amount" style="font-size:12px;color:#718096">${groupUsage}</td></tr>`;
         
         // 個別子項
         var hasMainBudgetOnly = mainBudgetMap[group] != null;
@@ -566,29 +627,36 @@
             remaining = (bgt != null) ? bgt - i.yearAmount : null;
             remClass = remaining != null ? (remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
           }
+          var usage = fmtPct(i.yearAmount, bgt);
           var nameHtml = i.subAccount;
-          if (tag) {
-            nameHtml += ' <button class="detail-btn" onclick="showDetailModal(\'' + tag.replace(/'/g, "\\'") + '\', budgetCache)">📋 明細</button>';
-          }
+          var detailKey = tag || i.subAccount || i.mainAccount;
+          var safeKey = String(detailKey).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          var fallbackBudget = (bgt != null) ? String(Number(bgt)) : 'null';
+          nameHtml += ' <button class="detail-btn" onclick="showDetailModal(\'' + safeKey + '\', budgetCache, ' + fallbackBudget + ')">📋 明細</button>';
           html += `<tr class="negative"><td style="padding-left:48px">${nameHtml}</td>
             <td class="amount">${fmt(i.monthAmount)}</td><td class="amount">${fmt(i.yearAmount)}</td>
             <td class="amount budget-col">${bgt != null ? fmt(bgt) : '-'}</td>
-            <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td></tr>`;
+            <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td>
+            <td class="amount">${usage}</td></tr>`;
         });
       }
       var expenseRemaining = totalExpenseBudget ? totalExpenseBudget - data.totalExpense : null;
       var expenseRemClass = expenseRemaining != null ? (expenseRemaining > 0 ? 'remaining-positive' : (expenseRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
+      var expenseUsage = fmtPct(data.totalExpense, totalExpenseBudget);
       html += `<tr class="subtotal"><td>支出合計</td>
         <td class="amount">${fmt(data.totalExpense)}</td><td class="amount">${fmt(data.totalExpense)}</td>
         <td class="amount budget-col">${totalExpenseBudget ? fmt(totalExpenseBudget) : '-'}</td>
-        <td class="amount ${expenseRemClass}">${expenseRemaining != null ? fmt(expenseRemaining) : '-'}</td></tr>`;
+        <td class="amount ${expenseRemClass}">${expenseRemaining != null ? fmt(expenseRemaining) : '-'}</td>
+        <td class="amount">${expenseUsage}</td></tr>`;
       
       // 本期損益
       var netBudget = totalIncomeBudget && totalExpenseBudget ? totalIncomeBudget - totalExpenseBudget : null;
+      var netUsage = fmtPct(data.netIncome, netBudget);
       html += `<tr class="grand-total"><td>本期損益</td>
         <td class="amount">${fmt(data.netIncome)}</td><td class="amount">${fmt(data.netIncome)}</td>
         <td class="amount budget-col">${netBudget != null ? fmt(netBudget) : '-'}</td>
-        <td class="amount">-</td></tr>`;
+        <td class="amount">-</td>
+        <td class="amount">${netUsage}</td></tr>`;
       
       html += `</tbody></table></div>`;
       document.getElementById('income-view').innerHTML = html;
