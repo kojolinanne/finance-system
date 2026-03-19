@@ -576,6 +576,49 @@
         });
       }
       
+      // 將預算表中的項目（即便沒有實際收支）也補進列表
+      function mergeBudgetItems(actualList, categoryName) {
+        var merged = [];
+        var actualMap = {};
+        actualList.forEach(function(i) {
+          var key = String(i.mainAccount || '') + '||' + String(i.subAccount || '');
+          actualMap[key] = i;
+        });
+        var seen = {};
+        if (budget && budget.items) {
+          budget.items.forEach(function(b) {
+            if (b.category !== categoryName) return;
+            if (!b.subAccount) return; // 大類預算由小計呈現
+            var key = String(b.mainAccount || '') + '||' + String(b.subAccount || '');
+            if (actualMap[key]) {
+              merged.push(actualMap[key]);
+            } else {
+              merged.push({
+                org: data.org,
+                period: data.period,
+                category: categoryName,
+                mainAccount: String(b.mainAccount || '').trim(),
+                subAccount: String(b.subAccount || '').trim(),
+                monthAmount: 0,
+                yearAmount: 0,
+                missionDeductMonth: 0,
+                missionDeductYear: 0
+              });
+            }
+            seen[key] = true;
+          });
+        }
+        // 補上預算沒有、但實際有的科目
+        actualList.forEach(function(i) {
+          var key = String(i.mainAccount || '') + '||' + String(i.subAccount || '');
+          if (!seen[key]) merged.push(i);
+        });
+        return merged;
+      }
+      
+      var mergedIncome = mergeBudgetItems(adjustedIncome, '收入');
+      var mergedExpense = mergeBudgetItems(data.expense, '支出');
+      
       // Group by mainAccount
       function groupBy(arr) {
         const g = {};
@@ -586,7 +629,7 @@
         return g;
       }
       
-      const expenseGroups = groupBy(data.expense);
+      const expenseGroups = groupBy(mergedExpense);
       
       // 計算收入預算總計
       var totalIncomeBudget = 0;
@@ -631,7 +674,7 @@
       
       // 收入
       html += `<tr class="section-header"><td colspan="6">📈 收入${deductMode ? '（扣除特別宣教奉獻）' : ''}</td></tr>`;
-      const incomeGroups = groupBy(adjustedIncome);
+      const incomeGroups = groupBy(mergedIncome);
       for (const [group, items] of Object.entries(incomeGroups)) {
         html += `<tr class="sub-section"><td colspan="6">${group}</td></tr>`;
         items.forEach(i => {
