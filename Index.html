@@ -211,6 +211,19 @@
       margin-left: 6px;
     }
     .detail-btn:hover { background: #dbeafe; }
+
+    .mobile-detail-row { display: none; }
+    .mobile-detail {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #4a5568;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      background: #f9fafb;
+    }
+    .mobile-detail .item { display: flex; justify-content: space-between; gap: 8px; }
+    .mobile-detail .label { color: #718096; }
     
     .modal-overlay {
       display: none;
@@ -273,10 +286,15 @@
       td, th { padding: 6px 8px; font-size: 12px; }
       td.amount, th.amount { font-size: 11px; }
       .summary-card .value { font-size: 18px; }
-      .report-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .report-card table { min-width: 600px; }
+      .report-card { overflow-x: hidden; }
+      .income-table th:not(:first-child),
+      .income-table td:not(:first-child) { display: none; }
+      .mobile-toggle { cursor: pointer; }
+      .mobile-toggle.open + .mobile-detail-row { display: table-row; }
+      .mobile-detail-row { display: none; }
       .detail-btn { font-size: 10px; padding: 1px 5px; }
       tr.section-header td, tr.sub-section td { font-size: 12px; }
+      .bs-side { border-right: none; }
     }
   </style>
 </head>
@@ -343,6 +361,25 @@
       var pct = (Number(used) / Number(budget)) * 100;
       if (!isFinite(pct)) return '-';
       return pct.toFixed(1) + '%';
+    }
+
+    function buildMobileDetailRow(items) {
+      var html = '<tr class="mobile-detail-row"><td colspan="6"><div class="mobile-detail">';
+      items.forEach(function(it) {
+        html += '<div class="item"><span class="label">' + it.label + '</span><span>' + it.value + '</span></div>';
+      });
+      html += '</div></td></tr>';
+      return html;
+    }
+
+    function bindMobileRowToggles() {
+      if (window.innerWidth > 768) return;
+      document.querySelectorAll('.mobile-toggle').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+          if (e.target.closest('.detail-btn')) return;
+          row.classList.toggle('open');
+        });
+      });
     }
     
     function showLoading(show) {
@@ -668,7 +705,7 @@
               <span class="tag period">${data.period}</span>
             </div>
           </div>
-          <table>
+          <table class="income-table">
             <thead><tr><th>科目</th><th class="amount">月結額</th><th class="amount">年結額</th><th class="amount">年預算</th><th class="amount">剩餘預算</th><th class="amount">預算使用率</th></tr></thead>
             <tbody>`;
       
@@ -682,21 +719,35 @@
           var remaining = (bgt != null) ? bgt - i.yearAmount : null;
           var remClass = remaining != null ? (remaining > 0 ? 'remaining-positive' : (remaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
           var usage = fmtPct(i.yearAmount, bgt);
-          html += `<tr class="positive"><td style="padding-left:48px">${i.subAccount}</td>
+          html += `<tr class="positive mobile-toggle"><td style="padding-left:48px">${i.subAccount}</td>
             <td class="amount">${fmt(i.monthAmount)}</td><td class="amount">${fmt(i.yearAmount)}</td>
             <td class="amount budget-col">${bgt != null ? fmt(bgt) : '-'}</td>
             <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td>
             <td class="amount">${usage}</td></tr>`;
+          html += buildMobileDetailRow([
+            { label: '月結額', value: fmt(i.monthAmount) },
+            { label: '年結額', value: fmt(i.yearAmount) },
+            { label: '年預算', value: bgt != null ? fmt(bgt) : '-' },
+            { label: '剩餘預算', value: remaining != null ? fmt(remaining) : '-' },
+            { label: '預算使用率', value: usage }
+          ]);
         });
       }
       var incomeRemaining = totalIncomeBudget ? totalIncomeBudget - adjustedTotalIncomeYear : null;
       var incomeRemClass = incomeRemaining != null ? (incomeRemaining > 0 ? 'remaining-positive' : (incomeRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
       var incomeUsage = fmtPct(adjustedTotalIncomeYear, totalIncomeBudget);
-      html += `<tr class="subtotal"><td>收入合計</td>
+      html += `<tr class="subtotal mobile-toggle"><td>收入合計</td>
         <td class="amount">${fmt(adjustedTotalIncomeMonth)}</td><td class="amount">${fmt(adjustedTotalIncomeYear)}</td>
         <td class="amount budget-col">${totalIncomeBudget ? fmt(totalIncomeBudget) : '-'}</td>
         <td class="amount ${incomeRemClass}">${incomeRemaining != null ? fmt(incomeRemaining) : '-'}</td>
         <td class="amount">${incomeUsage}</td></tr>`;
+      html += buildMobileDetailRow([
+        { label: '月結額', value: fmt(adjustedTotalIncomeMonth) },
+        { label: '年結額', value: fmt(adjustedTotalIncomeYear) },
+        { label: '年預算', value: totalIncomeBudget ? fmt(totalIncomeBudget) : '-' },
+        { label: '剩餘預算', value: incomeRemaining != null ? fmt(incomeRemaining) : '-' },
+        { label: '預算使用率', value: incomeUsage }
+      ]);
       
       // 支出
       html += `<tr class="section-header"><td colspan="6">📉 支出</td></tr>`;
@@ -718,11 +769,18 @@
         var groupRem = (groupBgt != null) ? groupBgt - gtYear : null;
         var groupRemClass = groupRem != null ? (groupRem > 0 ? 'remaining-positive' : (groupRem < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
         var groupUsage = fmtPct(gtYear, groupBgt);
-        html += `<tr class="sub-section"><td>${group}</td><td class="amount" style="font-size:12px;color:#718096">小計 ${fmt(gtMonth)}</td>
+        html += `<tr class="sub-section mobile-toggle"><td>${group}</td><td class="amount" style="font-size:12px;color:#718096">小計 ${fmt(gtMonth)}</td>
           <td class="amount" style="font-size:12px;color:#718096">${fmt(gtYear)}</td>
           <td class="amount budget-col" style="font-size:12px">${groupBgt != null ? fmt(groupBgt) : '-'}</td>
           <td class="amount ${groupRemClass}" style="font-size:12px">${groupRem != null ? fmt(groupRem) : '-'}</td>
           <td class="amount" style="font-size:12px;color:#718096">${groupUsage}</td></tr>`;
+        html += buildMobileDetailRow([
+          { label: '月結額', value: fmt(gtMonth) },
+          { label: '年結額', value: fmt(gtYear) },
+          { label: '年預算', value: groupBgt != null ? fmt(groupBgt) : '-' },
+          { label: '剩餘預算', value: groupRem != null ? fmt(groupRem) : '-' },
+          { label: '預算使用率', value: groupUsage }
+        ]);
         
         // 個別子項
         var hasMainBudgetOnly = mainBudgetMap[group] != null;
@@ -745,33 +803,55 @@
           var safeKey = String(detailKey).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           var fallbackBudget = (bgt != null) ? String(Number(bgt)) : 'null';
           nameHtml += ' <button class="detail-btn" onclick="showDetailModal(\'' + safeKey + '\', budgetCache, ' + fallbackBudget + ')">📋 明細</button>';
-          html += `<tr class="negative"><td style="padding-left:48px">${nameHtml}</td>
+          html += `<tr class="negative mobile-toggle"><td style="padding-left:48px">${nameHtml}</td>
             <td class="amount">${fmt(i.monthAmount)}</td><td class="amount">${fmt(i.yearAmount)}</td>
             <td class="amount budget-col">${bgt != null ? fmt(bgt) : '-'}</td>
             <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td>
             <td class="amount">${usage}</td></tr>`;
+          html += buildMobileDetailRow([
+            { label: '月結額', value: fmt(i.monthAmount) },
+            { label: '年結額', value: fmt(i.yearAmount) },
+            { label: '年預算', value: bgt != null ? fmt(bgt) : '-' },
+            { label: '剩餘預算', value: remaining != null ? fmt(remaining) : '-' },
+            { label: '預算使用率', value: usage }
+          ]);
         });
       }
       var expenseRemaining = totalExpenseBudget ? totalExpenseBudget - data.totalExpense : null;
       var expenseRemClass = expenseRemaining != null ? (expenseRemaining > 0 ? 'remaining-positive' : (expenseRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
       var expenseUsage = fmtPct(data.totalExpense, totalExpenseBudget);
-      html += `<tr class="subtotal"><td>支出合計</td>
+      html += `<tr class="subtotal mobile-toggle"><td>支出合計</td>
         <td class="amount">${fmt(data.totalExpense)}</td><td class="amount">${fmt(data.totalExpense)}</td>
         <td class="amount budget-col">${totalExpenseBudget ? fmt(totalExpenseBudget) : '-'}</td>
         <td class="amount ${expenseRemClass}">${expenseRemaining != null ? fmt(expenseRemaining) : '-'}</td>
         <td class="amount">${expenseUsage}</td></tr>`;
+      html += buildMobileDetailRow([
+        { label: '月結額', value: fmt(data.totalExpense) },
+        { label: '年結額', value: fmt(data.totalExpense) },
+        { label: '年預算', value: totalExpenseBudget ? fmt(totalExpenseBudget) : '-' },
+        { label: '剩餘預算', value: expenseRemaining != null ? fmt(expenseRemaining) : '-' },
+        { label: '預算使用率', value: expenseUsage }
+      ]);
       
       // 本期損益
       var netBudget = totalIncomeBudget && totalExpenseBudget ? totalIncomeBudget - totalExpenseBudget : null;
       var netUsage = fmtPct(adjustedNetIncome, netBudget);
-      html += `<tr class="grand-total"><td>本期損益${deductMode ? '（扣除特別宣教）' : ''}</td>
+      html += `<tr class="grand-total mobile-toggle"><td>本期損益${deductMode ? '（扣除特別宣教）' : ''}</td>
         <td class="amount">${fmt(adjustedNetIncome)}</td><td class="amount">${fmt(adjustedNetIncome)}</td>
         <td class="amount budget-col">${netBudget != null ? fmt(netBudget) : '-'}</td>
         <td class="amount">-</td>
         <td class="amount">${netUsage}</td></tr>`;
+      html += buildMobileDetailRow([
+        { label: '月結額', value: fmt(adjustedNetIncome) },
+        { label: '年結額', value: fmt(adjustedNetIncome) },
+        { label: '年預算', value: netBudget != null ? fmt(netBudget) : '-' },
+        { label: '剩餘預算', value: '-' },
+        { label: '預算使用率', value: netUsage }
+      ]);
       
       html += `</tbody></table></div>`;
       document.getElementById('income-view').innerHTML = html;
+      bindMobileRowToggles();
     }
     
     function renderBalance(data) {
