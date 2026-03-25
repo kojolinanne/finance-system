@@ -287,8 +287,8 @@
       td.amount, th.amount { font-size: 11px; }
       .summary-card .value { font-size: 18px; }
       .report-card { overflow-x: hidden; }
-      .income-table th:not(:first-child),
-      .income-table td:not(:first-child) { display: none; }
+      .income-table th:nth-child(n+4),
+      .income-table td:nth-child(n+4) { display: none; }
       .mobile-toggle { cursor: pointer; }
       .mobile-toggle.open + .mobile-detail-row { display: table-row; }
       .mobile-detail-row { display: none; }
@@ -725,8 +725,6 @@
             <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td>
             <td class="amount">${usage}</td></tr>`;
           html += buildMobileDetailRow([
-            { label: '月結額', value: fmt(i.monthAmount) },
-            { label: '年結額', value: fmt(i.yearAmount) },
             { label: '年預算', value: bgt != null ? fmt(bgt) : '-' },
             { label: '剩餘預算', value: remaining != null ? fmt(remaining) : '-' },
             { label: '預算使用率', value: usage }
@@ -742,8 +740,6 @@
         <td class="amount ${incomeRemClass}">${incomeRemaining != null ? fmt(incomeRemaining) : '-'}</td>
         <td class="amount">${incomeUsage}</td></tr>`;
       html += buildMobileDetailRow([
-        { label: '月結額', value: fmt(adjustedTotalIncomeMonth) },
-        { label: '年結額', value: fmt(adjustedTotalIncomeYear) },
         { label: '年預算', value: totalIncomeBudget ? fmt(totalIncomeBudget) : '-' },
         { label: '剩餘預算', value: incomeRemaining != null ? fmt(incomeRemaining) : '-' },
         { label: '預算使用率', value: incomeUsage }
@@ -775,8 +771,6 @@
           <td class="amount ${groupRemClass}" style="font-size:12px">${groupRem != null ? fmt(groupRem) : '-'}</td>
           <td class="amount" style="font-size:12px;color:#718096">${groupUsage}</td></tr>`;
         html += buildMobileDetailRow([
-          { label: '月結額', value: fmt(gtMonth) },
-          { label: '年結額', value: fmt(gtYear) },
           { label: '年預算', value: groupBgt != null ? fmt(groupBgt) : '-' },
           { label: '剩餘預算', value: groupRem != null ? fmt(groupRem) : '-' },
           { label: '預算使用率', value: groupUsage }
@@ -809,8 +803,6 @@
             <td class="amount ${remClass}">${remaining != null ? fmt(remaining) : '-'}</td>
             <td class="amount">${usage}</td></tr>`;
           html += buildMobileDetailRow([
-            { label: '月結額', value: fmt(i.monthAmount) },
-            { label: '年結額', value: fmt(i.yearAmount) },
             { label: '年預算', value: bgt != null ? fmt(bgt) : '-' },
             { label: '剩餘預算', value: remaining != null ? fmt(remaining) : '-' },
             { label: '預算使用率', value: usage }
@@ -826,8 +818,6 @@
         <td class="amount ${expenseRemClass}">${expenseRemaining != null ? fmt(expenseRemaining) : '-'}</td>
         <td class="amount">${expenseUsage}</td></tr>`;
       html += buildMobileDetailRow([
-        { label: '月結額', value: fmt(data.totalExpense) },
-        { label: '年結額', value: fmt(data.totalExpense) },
         { label: '年預算', value: totalExpenseBudget ? fmt(totalExpenseBudget) : '-' },
         { label: '剩餘預算', value: expenseRemaining != null ? fmt(expenseRemaining) : '-' },
         { label: '預算使用率', value: expenseUsage }
@@ -842,8 +832,6 @@
         <td class="amount">-</td>
         <td class="amount">${netUsage}</td></tr>`;
       html += buildMobileDetailRow([
-        { label: '月結額', value: fmt(adjustedNetIncome) },
-        { label: '年結額', value: fmt(adjustedNetIncome) },
         { label: '年預算', value: netBudget != null ? fmt(netBudget) : '-' },
         { label: '剩餘預算', value: '-' },
         { label: '預算使用率', value: netUsage }
