@@ -8,6 +8,13 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function checkPassword(password) {
+  var props = PropertiesService.getScriptProperties();
+  var stored = String(props.getProperty('LOGIN_PASSWORD') || '').trim();
+  if (!stored) return false;
+  return String(password || '').trim() === stored;
+}
+
 // 用綁定的 Spreadsheet（不需要額外授權）
 function getSpreadsheet() {
   return SpreadsheetApp.getActiveSpreadsheet();

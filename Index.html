@@ -224,6 +224,48 @@
     }
     .mobile-detail .item { display: flex; justify-content: space-between; gap: 8px; }
     .mobile-detail .label { color: #718096; }
+
+    .login-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 24px;
+    }
+    .login-overlay.show { display: flex; }
+    .login-card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+    .login-card h2 { font-size: 18px; color: #1a365d; margin-bottom: 6px; }
+    .login-card p { font-size: 13px; color: #718096; margin-bottom: 16px; }
+    .login-card input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .login-card button {
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 8px;
+      background: #2d5a87;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .login-error { color: #c53030; font-size: 12px; margin-top: 10px; display: none; }
     
     .modal-overlay {
       display: none;
@@ -299,6 +341,16 @@
   </style>
 </head>
 <body>
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <h2>財務報表系統</h2>
+      <p>請輸入密碼以繼續</p>
+      <input type="password" id="loginPassword" placeholder="輸入密碼" />
+      <button onclick="handleLogin()">登入</button>
+      <div class="login-error" id="loginError">密碼錯誤，請再試一次</div>
+    </div>
+  </div>
+
   <div class="header">
     <h1>主恩改革宗長老會</h1>
     <div class="subtitle">財務報表系統</div>
@@ -361,6 +413,51 @@
       var pct = (Number(used) / Number(budget)) * 100;
       if (!isFinite(pct)) return '-';
       return pct.toFixed(1) + '%';
+    }
+
+    function showLogin(show) {
+      var overlay = document.getElementById('loginOverlay');
+      overlay.classList.toggle('show', show);
+      if (show) {
+        var input = document.getElementById('loginPassword');
+        if (!input.dataset.bound) {
+          input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleLogin();
+          });
+          input.dataset.bound = '1';
+        }
+        input.value = '';
+        document.getElementById('loginError').style.display = 'none';
+        setTimeout(function() { input.focus(); }, 50);
+      }
+    }
+
+    function handleLogin() {
+      var pw = document.getElementById('loginPassword').value || '';
+      google.script.run
+        .withSuccessHandler(function(ok) {
+          if (ok) {
+            sessionStorage.setItem('authed', '1');
+            showLogin(false);
+            init();
+          } else {
+            document.getElementById('loginError').style.display = 'block';
+          }
+        })
+        .withFailureHandler(function(e) {
+          document.getElementById('loginError').textContent = '登入失敗，請稍後再試';
+          document.getElementById('loginError').style.display = 'block';
+        })
+        .checkPassword(pw);
+    }
+
+    function checkAuth() {
+      if (sessionStorage.getItem('authed') === '1') {
+        showLogin(false);
+        init();
+      } else {
+        showLogin(true);
+      }
     }
 
     function buildMobileDetailRow(items) {
@@ -941,7 +1038,7 @@
         .getFilterOptions();
     }
     
-    init();
+    checkAuth();
   </script>
 </body>
 </html>
