@@ -689,9 +689,10 @@
         ? data.totalIncome - data.totalIncomeDeductMonth
         : data.totalIncome;
       var adjustedTotalIncomeYear = deductMode && data.totalIncomeDeductYear
-        ? data.totalIncome - data.totalIncomeDeductYear
-        : data.totalIncome;
+        ? data.totalIncomeYear - data.totalIncomeDeductYear
+        : data.totalIncomeYear;
       var adjustedNetIncome = adjustedTotalIncomeMonth - data.totalExpense;
+      var adjustedNetIncomeYear = adjustedTotalIncomeYear - data.totalExpenseYear;
       
       // 建立預算查詢 map
       // subBudgetMap: 科目細項 → 預算
@@ -906,11 +907,11 @@
           ]);
         });
       }
-      var expenseRemaining = totalExpenseBudget ? totalExpenseBudget - data.totalExpense : null;
+      var expenseRemaining = totalExpenseBudget ? totalExpenseBudget - data.totalExpenseYear : null;
       var expenseRemClass = expenseRemaining != null ? (expenseRemaining > 0 ? 'remaining-positive' : (expenseRemaining < 0 ? 'remaining-negative' : 'remaining-zero')) : '';
-      var expenseUsage = fmtPct(data.totalExpense, totalExpenseBudget);
+      var expenseUsage = fmtPct(data.totalExpenseYear, totalExpenseBudget);
       html += `<tr class="subtotal mobile-toggle"><td>支出合計</td>
-        <td class="amount">${fmt(data.totalExpense)}</td><td class="amount">${fmt(data.totalExpense)}</td>
+        <td class="amount">${fmt(data.totalExpense)}</td><td class="amount">${fmt(data.totalExpenseYear)}</td>
         <td class="amount budget-col">${totalExpenseBudget ? fmt(totalExpenseBudget) : '-'}</td>
         <td class="amount ${expenseRemClass}">${expenseRemaining != null ? fmt(expenseRemaining) : '-'}</td>
         <td class="amount">${expenseUsage}</td></tr>`;
@@ -922,9 +923,9 @@
       
       // 本期損益
       var netBudget = totalIncomeBudget && totalExpenseBudget ? totalIncomeBudget - totalExpenseBudget : null;
-      var netUsage = fmtPct(adjustedNetIncome, netBudget);
+      var netUsage = fmtPct(adjustedNetIncomeYear, netBudget);
       html += `<tr class="grand-total mobile-toggle"><td>本期損益${deductMode ? '（扣除特別宣教）' : ''}</td>
-        <td class="amount">${fmt(adjustedNetIncome)}</td><td class="amount">${fmt(adjustedNetIncome)}</td>
+        <td class="amount">${fmt(adjustedNetIncome)}</td><td class="amount">${fmt(adjustedNetIncomeYear)}</td>
         <td class="amount budget-col">${netBudget != null ? fmt(netBudget) : '-'}</td>
         <td class="amount">-</td>
         <td class="amount">${netUsage}</td></tr>`;

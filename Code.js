@@ -97,8 +97,11 @@ function getIncomeStatement(org, period) {
   var income = [];
   var expense = [];
   var totalIncome = 0;
+  var totalIncomeYear = 0;
   var totalExpense = 0;
+  var totalExpenseYear = 0;
   var netIncome = 0;
+  var netIncomeYear = 0;
   var totalIncomeDeductMonth = 0;
   var totalIncomeDeductYear = 0;
   
@@ -143,12 +146,15 @@ function getIncomeStatement(org, period) {
       }
     } else if (category === '收入小計') {
       totalIncome = item.monthAmount;
+      totalIncomeYear = item.yearAmount;
       totalIncomeDeductMonth = deductMonth;
       totalIncomeDeductYear = deductYear;
     } else if (category === '支出小計') {
       totalExpense = item.monthAmount;
+      totalExpenseYear = item.yearAmount;
     } else if (category === '本期損益') {
       netIncome = item.monthAmount;
+      netIncomeYear = item.yearAmount;
     }
   }
   
@@ -168,17 +174,27 @@ function getIncomeStatement(org, period) {
   if (!totalIncome) {
     for (var a = 0; a < income.length; a++) totalIncome += income[a].monthAmount;
   }
+  if (!totalIncomeYear) {
+    for (var a2 = 0; a2 < income.length; a2++) totalIncomeYear += income[a2].yearAmount;
+  }
   if (!totalExpense) {
     for (var b = 0; b < expense.length; b++) totalExpense += expense[b].monthAmount;
   }
+  if (!totalExpenseYear) {
+    for (var b2 = 0; b2 < expense.length; b2++) totalExpenseYear += expense[b2].yearAmount;
+  }
   if (!netIncome) netIncome = totalIncome - totalExpense;
+  if (!netIncomeYear) netIncomeYear = totalIncomeYear - totalExpenseYear;
   
   return {
     income: income,
     expense: expense,
     totalIncome: totalIncome,
+    totalIncomeYear: totalIncomeYear,
     totalExpense: totalExpense,
+    totalExpenseYear: totalExpenseYear,
     netIncome: netIncome,
+    netIncomeYear: netIncomeYear,
     totalIncomeDeductMonth: totalIncomeDeductMonth,
     totalIncomeDeductYear: totalIncomeDeductYear,
     elderMode: settings.elderMode,
