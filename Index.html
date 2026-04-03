@@ -636,12 +636,10 @@
         return (p.getMonth() + 1) + '月';
       }
       var s = String(p);
+      var d = new Date(s);
+      if (!isNaN(d)) return (d.getMonth() + 1) + '月';
       var m = s.match(/(\d{1,2})月/);
       if (m) return m[1] + '月';
-      if (/GMT|\bJan\b|\bFeb\b|\bMar\b|\bApr\b|\bMay\b|\bJun\b|\bJul\b|\bAug\b|\bSep\b|\bOct\b|\bNov\b|\bDec\b/.test(s)) {
-        var d = new Date(s);
-        if (!isNaN(d)) return (d.getMonth() + 1) + '月';
-      }
       return s;
     }
 
@@ -653,6 +651,12 @@
         return roc + '年' + (p.getMonth() + 1) + '月';
       }
       var s = String(p);
+      var d = new Date(s);
+      if (!isNaN(d)) {
+        var y0 = d.getFullYear();
+        var roc0 = y0 > 1911 ? y0 - 1911 : y0;
+        return roc0 + '年' + (d.getMonth() + 1) + '月';
+      }
       if (/\d{2,4}年\d{1,2}月/.test(s)) {
         var ym = s.match(/(\d{2,4})年\s*(\d{1,2})月/);
         if (ym) return Number(ym[1]) + '年' + Number(ym[2]) + '月';
@@ -664,14 +668,6 @@
         var mm = Number(m[2]);
         return roc + '年' + mm + '月';
       }
-      if (/GMT|\bJan\b|\bFeb\b|\bMar\b|\bApr\b|\bMay\b|\bJun\b|\bJul\b|\bAug\b|\bSep\b|\bOct\b|\bNov\b|\bDec\b/.test(s)) {
-        var d = new Date(s);
-        if (!isNaN(d)) {
-          var y2 = d.getFullYear();
-          var roc2 = y2 > 1911 ? y2 - 1911 : y2;
-          return roc2 + '年' + (d.getMonth() + 1) + '月';
-        }
-      }
       return s;
     }
 
@@ -681,12 +677,12 @@
         return (p.getFullYear() * 100) + (p.getMonth() + 1);
       }
       var s = String(p);
+      var d = new Date(s);
+      if (!isNaN(d)) return (d.getFullYear() * 100) + (d.getMonth() + 1);
       var m = s.match(/(\d{2,4})年\s*(\d{1,2})月/);
       if (m) return Number(m[1]) * 100 + Number(m[2]);
       var m2 = s.match(/(\d{3,4})[^\d]?\s*(\d{1,2})/);
       if (m2) return Number(m2[1]) * 100 + Number(m2[2]);
-      var d = new Date(s);
-      if (!isNaN(d)) return (d.getFullYear() * 100) + (d.getMonth() + 1);
       return 0;
     }
     
