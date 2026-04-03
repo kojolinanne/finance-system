@@ -644,6 +644,36 @@
       }
       return s;
     }
+
+    function formatRocPeriod(p) {
+      if (!p) return p;
+      if (p instanceof Date) {
+        var y = p.getFullYear();
+        var roc = y > 1911 ? y - 1911 : y;
+        return roc + '年' + (p.getMonth() + 1) + '月';
+      }
+      var s = String(p);
+      if (/\d{2,4}年\d{1,2}月/.test(s)) {
+        var ym = s.match(/(\d{2,4})年\s*(\d{1,2})月/);
+        if (ym) return Number(ym[1]) + '年' + Number(ym[2]) + '月';
+      }
+      var m = s.match(/(\d{3,4})[^\d]?\s*(\d{1,2})[^\d]?\s*(\d{1,2})?/);
+      if (m) {
+        var y = Number(m[1]);
+        var roc = y > 1911 ? y - 1911 : y;
+        var mm = Number(m[2]);
+        return roc + '年' + mm + '月';
+      }
+      if (/GMT|\bJan\b|\bFeb\b|\bMar\b|\bApr\b|\bMay\b|\bJun\b|\bJul\b|\bAug\b|\bSep\b|\bOct\b|\bNov\b|\bDec\b/.test(s)) {
+        var d = new Date(s);
+        if (!isNaN(d)) {
+          var y2 = d.getFullYear();
+          var roc2 = y2 > 1911 ? y2 - 1911 : y2;
+          return roc2 + '年' + (d.getMonth() + 1) + '月';
+        }
+      }
+      return s;
+    }
     
     function onMissionModeChange() {
       // 用快取資料重新渲染，不需重新呼叫後端
@@ -1011,7 +1041,7 @@
             資產負債表
             <div>
               <span class="tag org">${data.org}</span>
-              <span class="tag period">${data.period}</span>
+              <span class="tag period">${formatRocPeriod(data.period)}</span>
             </div>
           </div>
           <div class="bs-container">
