@@ -365,6 +365,9 @@
     <select id="periodSelect" onchange="onFilterChange()">
       <option value="">載入中...</option>
     </select>
+    <select id="balancePeriodSelect" onchange="onFilterChange()" style="display:none;">
+      <option value="">載入中...</option>
+    </select>
     <label>顯示模式：</label>
     <select id="missionMode" onchange="onMissionModeChange()">
       <option value="all">包含全部宣教奉獻</option>
@@ -606,13 +609,25 @@
       el.classList.add('active');
       document.getElementById('income-view').style.display = tab === 'income' ? 'block' : 'none';
       document.getElementById('balance-view').style.display = tab === 'balance' ? 'block' : 'none';
+      onFilterChange();
+    }
+    
+    function onFilterChange() {
+      var incomeSel = document.getElementById('periodSelect');
+      var balanceSel = document.getElementById('balancePeriodSelect');
+      if (currentTab === 'income') {
+        incomeSel.style.display = '';
+        balanceSel.style.display = 'none';
+      } else {
+        incomeSel.style.display = 'none';
+        balanceSel.style.display = '';
+      }
       loadCurrentTab();
     }
     
-    function onFilterChange() { loadCurrentTab(); }
-    
     function getSelectedOrg() { return document.getElementById('orgSelect').value; }
     function getSelectedPeriod() { return document.getElementById('periodSelect').value; }
+    function getSelectedBalancePeriod() { return document.getElementById('balancePeriodSelect').value; }
     function getMissionMode() { return document.getElementById('missionMode').value; }
     
     function onMissionModeChange() {
@@ -625,6 +640,7 @@
     function loadCurrentTab() {
       const org = getSelectedOrg();
       const period = getSelectedPeriod();
+      const balancePeriod = getSelectedBalancePeriod();
       if (!org) return;
       
       if (currentTab === 'income') {
@@ -653,7 +669,7 @@
         google.script.run
           .withSuccessHandler(renderBalance)
           .withFailureHandler(e => { showLoading(false); alert('錯誤: ' + e.message); })
-          .getBalanceSheet(org, null);
+          .getBalanceSheet(org, balancePeriod);
       }
     }
     
@@ -1029,11 +1045,13 @@
           const orgSel = document.getElementById('orgSelect');
           const periodSel = document.getElementById('periodSelect');
           
+          const balanceSel = document.getElementById('balancePeriodSelect');
           orgSel.innerHTML = opts.organizations.map(o => `<option value="${o}">${o}</option>`).join('');
           periodSel.innerHTML = opts.incomePeriods.map(p => `<option value="${p}">${p}</option>`).join('');
+          balanceSel.innerHTML = opts.balancePeriods.map(p => `<option value="${p}">${p}</option>`).join('');
           
           showLoading(false);
-          loadCurrentTab();
+          onFilterChange();
         })
         .withFailureHandler(e => { showLoading(false); alert('初始化失敗: ' + e.message); })
         .getFilterOptions();
