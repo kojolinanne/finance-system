@@ -632,9 +632,17 @@
 
     function formatPeriodLabel(p) {
       if (!p) return p;
-      var m = String(p).match(/(\d{1,2})月/);
+      if (p instanceof Date) {
+        return (p.getMonth() + 1) + '月';
+      }
+      var s = String(p);
+      var m = s.match(/(\d{1,2})月/);
       if (m) return m[1] + '月';
-      return p;
+      if (/GMT|\bJan\b|\bFeb\b|\bMar\b|\bApr\b|\bMay\b|\bJun\b|\bJul\b|\bAug\b|\bSep\b|\bOct\b|\bNov\b|\bDec\b/.test(s)) {
+        var d = new Date(s);
+        if (!isNaN(d)) return (d.getMonth() + 1) + '月';
+      }
+      return s;
     }
     
     function onMissionModeChange() {
