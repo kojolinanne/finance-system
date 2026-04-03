@@ -629,6 +629,13 @@
     function getSelectedPeriod() { return document.getElementById('periodSelect').value; }
     function getSelectedBalancePeriod() { return document.getElementById('balancePeriodSelect').value; }
     function getMissionMode() { return document.getElementById('missionMode').value; }
+
+    function formatPeriodLabel(p) {
+      if (!p) return p;
+      var m = String(p).match(/(\d{1,2})月/);
+      if (m) return m[1] + '月';
+      return p;
+    }
     
     function onMissionModeChange() {
       // 用快取資料重新渲染，不需重新呼叫後端
@@ -1047,8 +1054,8 @@
           
           const balanceSel = document.getElementById('balancePeriodSelect');
           orgSel.innerHTML = opts.organizations.map(o => `<option value="${o}">${o}</option>`).join('');
-          periodSel.innerHTML = opts.incomePeriods.map(p => `<option value="${p}">${p}</option>`).join('');
-          balanceSel.innerHTML = opts.balancePeriods.map(p => `<option value="${p}">${p}</option>`).join('');
+          periodSel.innerHTML = opts.incomePeriods.map(p => `<option value="${p}">${formatPeriodLabel(p)}</option>`).join('');
+          balanceSel.innerHTML = opts.balancePeriods.map(p => `<option value="${p}">${formatPeriodLabel(p)}</option>`).join('');
           
           showLoading(false);
           onFilterChange();
