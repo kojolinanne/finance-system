@@ -674,6 +674,21 @@
       }
       return s;
     }
+
+    function periodSortKey(p) {
+      if (!p) return 0;
+      if (p instanceof Date) {
+        return (p.getFullYear() * 100) + (p.getMonth() + 1);
+      }
+      var s = String(p);
+      var m = s.match(/(\d{2,4})年\s*(\d{1,2})月/);
+      if (m) return Number(m[1]) * 100 + Number(m[2]);
+      var m2 = s.match(/(\d{3,4})[^\d]?\s*(\d{1,2})/);
+      if (m2) return Number(m2[1]) * 100 + Number(m2[2]);
+      var d = new Date(s);
+      if (!isNaN(d)) return (d.getFullYear() * 100) + (d.getMonth() + 1);
+      return 0;
+    }
     
     function onMissionModeChange() {
       // 用快取資料重新渲染，不需重新呼叫後端
@@ -1092,8 +1107,12 @@
           
           const balanceSel = document.getElementById('balancePeriodSelect');
           orgSel.innerHTML = opts.organizations.map(o => `<option value="${o}">${o}</option>`).join('');
-          periodSel.innerHTML = opts.incomePeriods.map(p => `<option value="${p}">${formatPeriodLabel(p)}</option>`).join('');
-          balanceSel.innerHTML = opts.balancePeriods.map(p => `<option value="${p}">${formatPeriodLabel(p)}</option>`).join('');
+          var incomePeriods = (opts.incomePeriods || []).slice().sort((a,b) => periodSortKey(b) - periodSortKey(a));
+          var balancePeriods = (opts.balancePeriods || []).slice().sort((a,b) => periodSortKey(b) - periodSortKey(a));
+          periodSel.innerHTML = incomePeriods.map(p => `<option value="${p}">${formatPeriodLabel(p)}</option>`).join('');
+          balanceSel.innerHTML = balancePeriods.map(p => `<option value="${p}">${formatPeriodLabel(p)}</option>`).join('');
+          if (incomePeriods.length) periodSel.value = incomePeriods[0];
+          if (balancePeriods.length) balanceSel.value = balancePeriods[0];
           
           showLoading(false);
           onFilterChange();
