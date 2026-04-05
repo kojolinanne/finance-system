@@ -86,6 +86,31 @@ function getFilterOptions() {
   };
 }
 
+// 將期間字串轉為可比較的 key（例如 115年3月 -> 11503）
+function periodToKey(periodValue) {
+  if (periodValue == null || periodValue === '') return 0;
+  var s = String(periodValue).trim();
+
+  // 優先處理「115年3月」這種格式
+  var m = s.match(/(\d{2,4})\s*年\s*(\d{1,2})\s*月/);
+  if (m) {
+    return Number(m[1]) * 100 + Number(m[2]);
+  }
+
+  // 次要處理「115/3」「115-03」等格式
+  var m2 = s.match(/(\d{2,4})\D+(\d{1,2})/);
+  if (m2) {
+    return Number(m2[1]) * 100 + Number(m2[2]);
+  }
+
+  // 若是 Date 物件
+  if (periodValue instanceof Date) {
+    return periodValue.getFullYear() * 100 + (periodValue.getMonth() + 1);
+  }
+
+  return 0;
+}
+
 // 取得收支餘絀表資料
 function getIncomeStatement(org, period) {
   var ss = getSpreadsheet();
@@ -93,6 +118,29 @@ function getIncomeStatement(org, period) {
   var sheet = ss.getSheetByName('收支餘絀表');
   var data = sheet.getDataRange().getValues();
   var rows = data.slice(1);
+  
+  // 先掃一次所有資料：建立「截至選定期間」的特別宣教扣除年累計（依科目）
+  var targetPeriodKey = periodToKey(period);
+  var incomeDeductYearMap = {};
+  for (var p = 0; p < rows.length; p++) {
+    var preRow = rows[p];
+    var preOrg = String(preRow[0]).trim();
+    var prePeriod = String(preRow[1]).trim();
+    var preCategory = String(preRow[2]).trim();
+
+    if (org && preOrg !== org) continue;
+    if (preCategory !== '收入') continue;
+
+    // 有指定期間時，只累加到該期間為止；沒指定則全部累加
+    if (period && periodToKey(prePeriod) > targetPeriodKey) continue;
+
+    var preMain = String(preRow[3]).trim();
+    var preSub = String(preRow[4]).trim();
+    var deductMonthForYear = Number(preRow[7]) || 0; // 以月扣除額累加成年度扣除
+    var mapKey = preMain + '||' + preSub;
+
+    incomeDeductYearMap[mapKey] = (incomeDeductYearMap[mapKey] || 0) + deductMonthForYear;
+  }
   
   var income = [];
   var expense = [];
@@ -120,7 +168,10 @@ function getIncomeStatement(org, period) {
     
     // H欄(index 7)=特別宣教扣除月結額, I欄(index 8)=特別宣教扣除年結額
     var deductMonth = Number(row[7]) || 0;
-    var deductYear = Number(row[8]) || 0;
+    var deductYearRaw = Number(row[8]) || 0;
+    var mapKey = String(row[3]).trim() + '||' + String(row[4]).trim();
+    // 若年結扣除欄未填，改用截至選定期間的月扣除累計，確保年結額可隨期間同步
+    var deductYear = deductYearRaw || (incomeDeductYearMap[mapKey] || 0);
     
     var item = {
       org: rowOrg,
@@ -183,8 +234,27 @@ function getIncomeStatement(org, period) {
   if (!totalExpenseYear) {
     for (var b2 = 0; b2 < expense.length; b2++) totalExpenseYear += expense[b2].yearAmount;
   }
+
+  // 若收入小計未提供月結扣除，改用本期收入科目月扣除加總
+  if (!totalIncomeDeductMonth) {
+    for (var d = 0; d < income.length; d++) {
+      totalIncomeDeductMonth += Number(income[d].missionDeductMonth) || 0;
+    }
+  }
+
   if (!netIncome) netIncome = totalIncome - totalExpense;
   if (!netIncomeYear) netIncomeYear = totalIncomeYear - totalExpenseYear;
+
+  // 若收入小計未提供年結扣除，改用各收入科目的年結扣除加總
+  if (!totalIncomeDeductYear) {
+    var summedDeductYear = 0;
+    for (var key in incomeDeductYearMap) {
+      if (Object.prototype.hasOwnProperty.call(incomeDeductYearMap, key)) {
+        summedDeductYear += Number(incomeDeductYearMap[key]) || 0;
+      }
+    }
+    totalIncomeDeductYear = summedDeductYear;
+  }
   
   return {
     income: income,
