@@ -740,17 +740,20 @@
       
       // 若為扣除模式，調整收入項目金額
       var adjustedIncome = data.income.map(function(i) {
-        if (deductMode && i.missionDeductMonth) {
+        var deductMonth = Number(i.missionDeductMonth) || 0;
+        var deductYear = Number(i.missionDeductYear) || 0;
+        // 只要月結或年結有任一扣除值，就要同步套用扣除模式
+        if (deductMode && (deductMonth !== 0 || deductYear !== 0)) {
           return {
             org: i.org,
             period: i.period,
             category: i.category,
             mainAccount: i.mainAccount,
             subAccount: i.subAccount,
-            monthAmount: i.monthAmount - i.missionDeductMonth,
-            yearAmount: i.yearAmount - i.missionDeductYear,
-            missionDeductMonth: i.missionDeductMonth,
-            missionDeductYear: i.missionDeductYear
+            monthAmount: Number(i.monthAmount || 0) - deductMonth,
+            yearAmount: Number(i.yearAmount || 0) - deductYear,
+            missionDeductMonth: deductMonth,
+            missionDeductYear: deductYear
           };
         }
         return i;
