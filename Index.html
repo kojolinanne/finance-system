@@ -1181,11 +1181,43 @@
       // \u56db\u534a\u5206 1-4\u6708 vs 5\u6708 \u652f\u51fa\u7d50\u69cb
       var expSum = main.expenseSummary || {};
       var expKeys = Object.keys(expSum).sort(function(a, b) { return (expSum[b].janToApr || 0) - (expSum[a].janToApr || 0); });
+      // 人事費用相關關鍵字
+      var personKeys = ['\u85b9\u8cbb', '\u52b3\u5065\u4fdd', '\u52b3\u9000', '\u96de\u8077\u91d1', '\u63a7\u59d4\u8cbb'];
+      function isPerson(k) {
+        for (var pi = 0; pi < personKeys.length; pi++) { if (k.indexOf(personKeys[pi]) !== -1) return true; }
+        return false;
+      }
+      // 分離人事費用與其他
+      var personJanToApr = 0, personMay = 0;
+      var otherKeys = [];
+      for (var ek = 0; ek < expKeys.length; ek++) {
+        var k = expKeys[ek];
+        var d = expSum[k];
+        if (isPerson(k)) {
+          personJanToApr += d.janToApr || 0;
+          personMay += d.may || 0;
+        } else {
+          otherKeys.push(k);
+        }
+      }
       html += '<div class="report-card" style="margin-top:24px">' +
         '<div class="report-title">\ud83d\udcc9 \u652f\u51fa\u7d50\u69cb\u5206\u6790\uff08\u4e3b\u6069\uff09</div>' +
         '<table><thead><tr><th>\u652f\u51fa\u9805\u76ee</th><th class="amount">1-4\u6708\u5408\u8a08</th><th class="amount">1-4\u6708\u6708\u5747</th><th class="amount">5\u6708</th><th class="amount">\u6bd4\u8f03</th></tr></thead><tbody>';
-      for (var ek = 0; ek < expKeys.length; ek++) {
-        var k = expKeys[ek];
+      // 人事費用（合計）
+      var pAvg = personJanToApr / 4;
+      var pChg = pAvg > 0 ? ((personMay - pAvg) / pAvg * 100) : 0;
+      var pChgStr = Math.abs(pChg).toFixed(1) + (pChg !== 0 ? '%' : '');
+      var pChgCls = pChg > 10 ? 'negative' : pChg < -10 ? 'positive' : '';
+      html += '<tr class="negative" style="background:#fffbea">' +
+        '<td><strong>\u4eba\u4e8b\u8cbb\u7528 <span style="font-weight:400;font-size:11px;color:#92400e">[\u5408\u8a08]</span></strong></td>' +
+        '<td class="amount"><strong>' + fmt(personJanToApr) + '</strong></td>' +
+        '<td class="amount" style="color:#718096"><strong>' + fmt(pAvg) + '</strong></td>' +
+        '<td class="amount"><strong>' + fmt(personMay) + '</strong></td>' +
+        '<td class="amount ' + pChgCls + '"><strong>' + pChgStr + '</strong></td>' +
+        '</tr>';
+      // 其他支出項目
+      for (var oi = 0; oi < otherKeys.length; oi++) {
+        var k = otherKeys[oi];
         var d = expSum[k];
         var jv = d.janToApr || 0;
         var mv = d.may || 0;
