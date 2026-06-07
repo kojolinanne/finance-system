@@ -361,76 +361,215 @@ function getBudgetData(org) {
   return { items: items, detailMap: detailMap, actualDetailMap: actualDetailMap };
 }
 
-// 取得資產負債表資料
-function getBalanceSheet(org, period) {
+// ============================================================
+// 財務分析（新增）
+// ============================================================
+
+function getFinancialAnalysis() {
   var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('資產負債表');
-  var data = sheet.getDataRange().getValues();
-  var rows = data.slice(1);
+  var settings = getSettings();
   
-  var assets = [];
-  var liabilities = [];
-  var equity = [];
-  var totalAssets = 0;
-  var totalLiab = 0;
-  var totalEquity = 0;
-  var totalLiabEquity = 0;
+  // 讀取收支餘絀表
+  var incomeSheet = ss.getSheetByName('收支餘絀表');
+  var incomeData = incomeSheet.getDataRange().getValues();
+  var incomeRows = incomeData.slice(1);
   
-  for (var i = 0; i < rows.length; i++) {
-    var row = rows[i];
-    var rowOrg = String(row[0]).trim();
-    var rowPeriod = String(row[1]).trim();
-    var tableType = String(row[2]).trim();
+  var churchData = {};
+  var periodOrder = [];
+  
+  for (var i = 0; i < incomeRows.length; i++) {
+    var row = incomeRows[i];
+    var org = String(row[0]).trim();
+    var period = String(row[1]).trim();
+    var category = String(row[2]).trim();
+    var mainAccount = String(row[3]).trim();
+    var subAccount = String(row[4]).trim();
+    var monthAmount = Number(row[5]) || 0;
     
-    if (org && rowOrg !== org) continue;
-    if (period && rowPeriod !== period) continue;
+    if (!org || org === 'undefined') continue;
+    if (!churchData[org]) churchData[org] = {};
+    if (!churchData[org][period]) {
+      churchData[org][period] = {
+        income: {},
+        expense: {},
+        incomeTotal: 0,
+        expenseTotal: 0,
+        specialMissionDeduct: 0
+      };
+      periodOrder.push({ org: org, period: period });
+    }
     
-    var item = {
-      org: rowOrg,
-      period: rowPeriod,
-      tableType: tableType,
-      mainAccount: String(row[3]).trim(),
-      subAccount: String(row[4]).trim(),
-      amount: Number(row[5]) || 0
-    };
-    
-    if (tableType === '資產') {
-      assets.push(item);
-    } else if (tableType === '負債') {
-      liabilities.push(item);
-    } else if (tableType === '基金及餘絀') {
-      equity.push(item);
-    } else if (tableType === '資產小計') {
-      totalAssets = item.amount;
-    } else if (tableType === '負債小計') {
-      totalLiab = item.amount;
-    } else if (tableType === '基金及餘絀小計') {
-      totalEquity = item.amount;
-    } else if (tableType === '合計') {
-      totalLiabEquity = item.amount;
+    if (category === '收入') {
+      var key = mainAccount + '||' + subAccount;
+      churchData[org][period].income[key] = {
+        main: mainAccount,
+        sub: subAccount,
+        amount: monthAmount
+      };
+      churchData[org][period].incomeTotal += monthAmount;
+      // 宣教奉獻收入屬特別奉獻
+      if (mainAccount === '捐贈收入' && subAccount === '宣教奉獻收入') {
+        churchData[org][period].specialMissionDeduct = monthAmount;
+      }
+    } else if (category === '支出') {
+      var key = mainAccount + '||' + subAccount;
+      churchData[org][period].expense[key] = {
+        main: mainAccount,
+        sub: subAccount,
+        amount: monthAmount
+      };
+      churchData[org][period].expenseTotal += monthAmount;
     }
   }
   
-  if (!totalAssets) {
-    for (var a = 0; a < assets.length; a++) totalAssets += assets[a].amount;
-  }
-  if (!totalLiab) {
-    for (var b = 0; b < liabilities.length; b++) totalLiab += liabilities[b].amount;
-  }
-  if (!totalEquity) {
-    for (var c = 0; c < equity.length; c++) totalEquity += equity[c].amount;
-  }
-  if (!totalLiabEquity) totalLiabEquity = totalLiab + totalEquity;
+  // 讀取資產負債表（4月底 vs 5月底）
+  var bsSheet = ss.getSheetByName('資產負債表');
+  var bsData = bsSheet.getDataRange().getValues();
+  var bsRows = bsData.slice(1);
   
-  return {
-    assets: assets,
-    liabilities: liabilities,
-    equity: equity,
-    totalAssets: totalAssets,
-    totalLiabilities: totalLiab,
-    totalEquity: totalEquity,
-    totalLiabEquity: totalLiabEquity,
-    org: org || '全部',
-    period: period || '全部'
-  };
+  var bsDataMap = {};
+  for (var j = 0; j < bsRows.length; j++) {
+    var r = bsRows[j];
+    var org = String(r[0]).trim();
+    var period = String(r[1]).trim();
+    var tableType = String(r[2]).trim();
+    var sub = String(r[4]).trim();
+    var amount = Number(r[5]) || 0;
+    
+    if (!org || org === 'undefined') continue;
+    if (!bsDataMap[org]) bsDataMap[org] = {};
+    if (!bsDataMap[org][period]) {
+      bsDataMap[org][period] = { assets: {}, liabilities: {}, equity: {}, totalAssets: 0, totalLiab: 0, totalEquity: 0 };
+    }
+    
+    if (tableType === '資產') {
+      bsDataMap[org][period].assets[sub] = amount;
+    } else if (tableType === '負債') {
+      bsDataMap[org][period].liabilities[sub] = amount;
+    } else if (tableType === '基金及餘絀') {
+      bsDataMap[org][period].equity[sub] = amount;
+    } else if (tableType === '資產小計') {
+      bsDataMap[org][period].totalAssets = amount;
+    } else if (tableType === '負債小計') {
+      bsDataMap[org][period].totalLiab = amount;
+    } else if (tableType === '基金及餘絀小計') {
+      bsDataMap[org][period].totalEquity = amount;
+    }
+  }
+  
+  // 組裝分析結果
+  var result = {};
+  var orgList = ['主恩', '善牧'];
+  
+  for (var ci = 0; ci < orgList.length; ci++) {
+    var org = orgList[ci];
+    if (!churchData[org]) continue;
+    
+    var periods = Object.keys(churchData[org]).sort(function(a, b) {
+      return periodToKey(a) - periodToKey(b);
+    });
+    
+    // 月別資料
+    var monthlyData = [];
+    var periodTotal = {};
+    
+    for (var pi = 0; pi < periods.length; pi++) {
+      var period = periods[pi];
+      var d = churchData[org][period];
+      var regularIncome = d.incomeTotal - d.specialMissionDeduct;
+      var balance = regularIncome - d.expenseTotal;
+      
+      monthlyData.push({
+        period: period,
+        totalIncome: d.incomeTotal,
+        specialMission: d.specialMissionDeduct,
+        regularIncome: regularIncome,
+        expense: d.expenseTotal,
+        balance: balance
+      });
+    }
+    
+    // 1-4月 vs 5月 彙總
+    var janToApr = { incomeTotal: 0, specialMission: 0, regularIncome: 0, expense: 0 };
+    var mayData = null;
+    for (var pi2 = 0; pi2 < periods.length; pi2++) {
+      var period = periods[pi2];
+      var d = churchData[org][period];
+      if (period.indexOf('5月') !== -1) {
+        mayData = {
+          period: period,
+          totalIncome: d.incomeTotal,
+          specialMission: d.specialMissionDeduct,
+          regularIncome: d.incomeTotal - d.specialMissionDeduct,
+          expense: d.expenseTotal,
+          balance: (d.incomeTotal - d.specialMissionDeduct) - d.expenseTotal
+        };
+      } else {
+        janToApr.incomeTotal += d.incomeTotal;
+        janToApr.specialMission += d.specialMissionDeduct;
+        janToApr.regularIncome += (d.incomeTotal - d.specialMissionDeduct);
+        janToApr.expense += d.expenseTotal;
+      }
+    }
+    janToApr.balance = janToApr.regularIncome - janToApr.expense;
+    
+    // 收入項目彙總（1-4月 vs 5月）
+    var incomeSummary = {};
+    var expenseSummary = {};
+    for (var pi3 = 0; pi3 < periods.length; pi3++) {
+      var period = periods[pi3];
+      var d = churchData[org][period];
+      var isMay = period.indexOf('5月') !== -1;
+      
+      for (var ik in d.income) {
+        var item = d.income[ik];
+        if (!incomeSummary[item.sub]) incomeSummary[item.sub] = { janToApr: 0, may: 0, label: item.main };
+        if (isMay) incomeSummary[item.sub].may += item.amount;
+        else incomeSummary[item.sub].janToApr += item.amount;
+      }
+      for (var ek in d.expense) {
+        var eitem = d.expense[ek];
+        if (!expenseSummary[eitem.sub]) expenseSummary[eitem.sub] = { janToApr: 0, may: 0, label: eitem.main };
+        if (isMay) expenseSummary[eitem.sub].may += eitem.amount;
+        else expenseSummary[eitem.sub].janToApr += eitem.amount;
+      }
+    }
+    
+    // 收支大類彙總
+    var incomeCategoryTotal = {};
+    var expenseCategoryTotal = {};
+    for (var pi4 = 0; pi4 < periods.length; pi4++) {
+      var period = periods[pi4];
+      var d = churchData[org][period];
+      var isMay4 = period.indexOf('5月') !== -1;
+      
+      for (var ik2 in d.income) {
+        var item2 = d.income[ik2];
+        var catKey = item2.main;
+        if (!incomeCategoryTotal[catKey]) incomeCategoryTotal[catKey] = { janToApr: 0, may: 0 };
+        if (isMay4) incomeCategoryTotal[catKey].may += item2.amount;
+        else incomeCategoryTotal[catKey].janToApr += item2.amount;
+      }
+      for (var ek2 in d.expense) {
+        var eitem2 = d.expense[ek2];
+        var ecatKey = eitem2.main;
+        if (!expenseCategoryTotal[ecatKey]) expenseCategoryTotal[ecatKey] = { janToApr: 0, may: 0 };
+        if (isMay4) expenseCategoryTotal[ecatKey].may += eitem2.amount;
+        else expenseCategoryTotal[ecatKey].janToApr += eitem2.amount;
+      }
+    }
+    
+    result[org] = {
+      monthly: monthlyData,
+      janToApr: janToApr,
+      may: mayData,
+      incomeSummary: incomeSummary,
+      expenseSummary: expenseSummary,
+      incomeCategoryTotal: incomeCategoryTotal,
+      expenseCategoryTotal: expenseCategoryTotal,
+      balanceSheet: bsDataMap[org] || {}
+    };
+  }
+  
+  return result;
 }
