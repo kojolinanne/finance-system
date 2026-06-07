@@ -1181,19 +1181,13 @@
       // \u56db\u534a\u5206 1-4\u6708 vs 5\u6708 \u652f\u51fa\u7d50\u69cb
       var expSum = main.expenseSummary || {};
       var expKeys = Object.keys(expSum).sort(function(a, b) { return (expSum[b].janToApr || 0) - (expSum[a].janToApr || 0); });
-      // 人事費用相關關鍵字
-      var personKeys = ['\u85b9\u8cbb', '\u52b3\u5065\u4fdd', '\u52b3\u9000', '\u96de\u8077\u91d1', '\u63a7\u59d4\u8cbb'];
-      function isPerson(k) {
-        for (var pi = 0; pi < personKeys.length; pi++) { if (k.indexOf(personKeys[pi]) !== -1) return true; }
-        return false;
-      }
-      // 分離人事費用與其他
+      // 以 label（大類主帳戶）判斷是否為人事費用，比關鍵字更可靠
       var personJanToApr = 0, personMay = 0;
       var otherKeys = [];
       for (var ek = 0; ek < expKeys.length; ek++) {
         var k = expKeys[ek];
         var d = expSum[k];
-        if (isPerson(k)) {
+        if (d.label === '\u4eba\u4e8b\u8cbb\u7528') {
           personJanToApr += d.janToApr || 0;
           personMay += d.may || 0;
         } else {

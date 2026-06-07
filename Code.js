@@ -571,27 +571,5 @@ function getFinancialAnalysis() {
     };
   }
   
-  // DEBUG: 列出 expenseSummary 的所有 keys 和值
-  Logger.log('=== expenseSummary keys for 主恩 ===');
-  if (result['\u4e3b\u6069']) {
-    var es = result['\u4e3b\u6069'].expenseSummary;
-    for (var k in es) {
-      Logger.log(k + ' -> janToApr=' + es[k].janToApr + ', may=' + es[k].may);
-    }
-  }
-  
   return result;
-}
-
-// 測試用：直接執行並輸出 log
-function testFinancialAnalysis() {
-  var result = getFinancialAnalysis();
-  var es = result['\u4e3b\u6069'].expenseSummary;
-  var totalJan = 0, totalMay = 0;
-  for (var k in es) {
-    totalJan += es[k].janToApr || 0;
-    totalMay += es[k].may || 0;
-    Logger.log(k + ' => janToApr:' + es[k].janToApr + ', may:' + es[k].may);
-  }
-  Logger.log('TOTAL janToApr=' + totalJan + ', may=' + totalMay);
 }
