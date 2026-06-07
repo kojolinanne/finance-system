@@ -1165,8 +1165,9 @@
         var jv = d.janToApr || 0;
         var mv = d.may || 0;
         var avg = jv / 4;
-        var chg = avg > 0 ? ((mv - avg) / avg * 100) : 0;
-        var chgStr = Math.abs(chg).toFixed(1) + (chg !== 0 ? '%' : '');
+        var diff = mv - avg;
+        var chg = avg > 0 ? (diff / avg * 100) : 0;
+        var chgStr = (chg !== 0 ? (chg > 0 ? '+' : '-') + fmt(Math.abs(diff)) + ' (' + Math.abs(chg).toFixed(1) + '%)' : '0 (0%)');
         var chgCls = chg > 5 ? 'positive' : chg < -5 ? 'negative' : '';
         html += '<tr class="positive">' +
           '<td>' + k + '</td>' +
@@ -1207,7 +1208,7 @@
         '<td class="amount"><strong>' + fmt(personJanToApr) + '</strong></td>' +
         '<td class="amount" style="color:#718096"><strong>' + fmt(pAvg) + '</strong></td>' +
         '<td class="amount"><strong>' + fmt(personMay) + '</strong></td>' +
-        '<td class="amount ' + pChgCls + '"><strong>' + pChgStr + '</strong></td>' +
+        '<td class="amount ' + pChgCls + '"><strong>' + (pChg !== 0 ? (pChg > 0 ? '+' : '-') + fmt(Math.abs(personMay - pAvg)) + ' (' + pChgStr + ')' : '0 (0%)') + '</strong></td>' +
         '</tr>';
       // 其他支出項目
       for (var oi = 0; oi < otherKeys.length; oi++) {
@@ -1216,8 +1217,9 @@
         var jv = d.janToApr || 0;
         var mv = d.may || 0;
         var avg = jv / 4;
-        var chg = avg > 0 ? ((mv - avg) / avg * 100) : 0;
-        var chgStr = Math.abs(chg).toFixed(1) + (chg !== 0 ? '%' : '');
+        var diff = mv - avg;
+        var chg = avg > 0 ? (diff / avg * 100) : 0;
+        var chgStr = (chg !== 0 ? (chg > 0 ? '+' : '-') + fmt(Math.abs(diff)) + ' (' + Math.abs(chg).toFixed(1) + '%)' : '0 (0%)');
         var chgCls = chg > 10 ? 'negative' : chg < -10 ? 'positive' : '';
         var isDecor = k === '\u88c5\u6f01\u8cbb' && mv > 0;
         html += '<tr class="negative">' +
