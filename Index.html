@@ -1364,13 +1364,13 @@
         '<div class="report-title">\ud83d\udd0d \u95dc\u9375\u89c0\u5bdf\u8207\u98a8\u96aa\u63d0\u793a</div>' +
         '<table><tbody>';
       if (deficits.length > 0) {
-        html += '<tr><td style="padding:10px 24px;color:#c53030">\u26a0 \u8d6b\u5b57\u6708\u4efd\uff1a' + deficits.map(function(m) { return m.period; }).join('\u3001') + '\uff08\u7d93\u5e38\u6027\u6536\u5165\u4f4e\u65bc\u652f\u51fa\uff09</td></tr>';
+        html += '<tr><td style="padding:10px 24px;color:#c53030">\u26a0 \u8d63\u5b57\u6708\u4efd\uff1a' + deficits.map(function(m) { return m.period; }).join('\u3001') + '\uff08\u7d93\u5e38\u6027\u6536\u5165\u4f4e\u65bc\u652f\u51fa\uff09</td></tr>';
       }
       if (rentUp) {
         html += '<tr><td style="padding:10px 24px;color:#c53030">\u26a0 \u79df\u91d1\u8c03\u5347\uff1a\u5f9e\u6708\u5747 ' + fmt(rentAvg) + ' \u8c03\u6574\u70ba ' + fmt(rentMay) + '\uff08\u6708\u589e ' + fmt(rentMay - rentAvg) + '\uff0c\u5e74\u589e ' + fmt((rentMay - rentAvg) * 12) + '\uff09</td></tr>';
       }
       if (decorMay > 0) {
-        html += '<tr><td style="padding:10px 24px;color:#c53030">\u26a0 \u4e00\u6b21\u6027\u5927\u984d\u652f\u51fa\uff1a\u88c5\u6f54\u8cbb ' + fmt(decorMay) + ' \u5143\uff0c\u5efa\u8bae\u78ba\u8a8d\u5f8c\u7e8c\u4ed8\u6b3e\u8a08\u7562\u53ca\u662f\u5426\u5df2\u7de8\u5217\u983b\u7b97</td></tr>';
+        html += '<tr><td style="padding:10px 24px;color:#c53030">\u26a0 \u4e00\u6b21\u6027\u5927\u984d\u652f\u51fa\uff1a\u88c5\u6f54\u8cbb ' + fmt(decorMay) + ' \u5143\uff0c\u5efa\u8bba\u78ba\u8a8d\u5f8c\u7e8c\u4ed8\u6b3e\u8a08\u7562\u53ca\u662f\u5426\u5df2\u7de8\u5217\u983b\u7b97</td></tr>';
       }
       if (gbDiff !== 0) {
         html += '<tr><td style="padding:10px 24px">\ud83d\udccb \u5b58\u51fa\u4fdd\u8b49\u91d1\u8b8a\u5316 ' + fmt(gbDiff) + ' \u5143\uff0c\u5efa\u8bae\u78ba\u8a8d\u6b3e\u9805\u6027\u8cea\u8207\u7528\u9014\u8aaa\u660e</td></tr>';
@@ -1387,7 +1387,7 @@
       if (shanmu) {
         var smMonthly = shanmu.monthly || [];
         html += '<div class="report-card" style="margin-top:24px">' +
-          '<div class="report-title">\ud83c\udfe0 \u5584\u7267\u6559\u6703 \u6536\u652f\u6982\u51ed\uff08\u5c0d\u7167\u53c3\u8003\uff09</div>' +
+          '<div class="report-title">\ud83c\udfe0 \u5584\u7267\u6559\u6703 \u6536\u652f\u6982\u51b5\uff08\u5c0d\u7167\u53c3\u8003\uff09</div>' +
           '<table><thead><tr><th>\u671f\u9593</th><th class="amount">\u6536\u5165</th><th class="amount">\u652f\u51fa</th><th class="amount">\u7d50\u9918</th></tr></thead><tbody>';
         for (var si = 0; si < smMonthly.length; si++) {
           var sm = smMonthly[si];
