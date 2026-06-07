@@ -1280,11 +1280,11 @@
       }
       html += '</tbody></table></div>';
       
-      // \u4e94\u534a\u5206 \u8ca1\u7522\u8ca1\u52d9\u6b78\u4e8e\u5883\u6bb5\u6bd4\u8f03
+      // \u4e94\u534a\u5206 \u8d44\u7522\u6d41\u52d5\u8b8a\u5316\u5883\u6bb5\u6bd4\u8f03
       var bsApr = main.balanceSheet['115\u5e744\u670830\u65e5'] || {};
       var bsMay = main.balanceSheet['115\u5e745\u670831\u65e5'] || {};
       html += '<div class="report-card" style="margin-top:24px">' +
-        '<div class="report-title">\ud83c\udfe6 \u8ca1\u7522\u8ca1\u52d9\u6b78\u4e8e\uff08\u4e3b\u6069\uff09</div>' +
+        '<div class="report-title">\ud83c\udfe6 \u8d44\u7522\u8ca0\u50b5\u8b8a\u5316\uff08\u4e3b\u6069\uff09</div>' +
         '<table><thead><tr><th>\u9805\u76ee</th><th class="amount">115\u5e744\u670830\u65e5</th><th class="amount">115\u5e745\u670831\u65e5</th><th class="amount">\u8d8a\u7574</th></tr></thead><tbody>' +
         '<tr class="section-header"><td colspan="4">\u6d41\u52d5\u8cc7\u7522</td></tr>';
       var assetKeys = ['\u5eab\u5b58\u73fe\u91d1', '\u6d3b\u671f\u5b58\u6b3e', '\u6d3b\u671f\u5b58\u6b3e-\u50b3\u9053\u96de\u8077\u91d1', '\u6d3b\u671f\u5b58\u6b3e-\u540c\u5de5\u96de\u8077\u91d1', '\u6d3b\u671f\u5b58\u6b3e-\u690d\u5802', '\u5176\u4ed6\u9810\u4ed8\u6b3e\u9805'];
@@ -1317,7 +1317,7 @@
         '<td class="amount">' + fmt(bsMay.totalAssets || 0) + '</td>' +
         '<td class="amount">' + fmt((bsMay.totalAssets || 0) - (bsApr.totalAssets || 0)) + '</td>' +
         '</tr>' +
-        '<tr class="section-header"><td colspan="4">\u8cac\u52d5</td></tr>' +
+        '<tr class="section-header"><td colspan="4">\u6d41\u52d5</td></tr>' +
         '<tr><td style="padding-left:32px">\u61c9\u4ed8\u96de\u8077\u5c31\u91d1</td>' +
         '<td class="amount">' + fmt(bsApr.liabilities ? (bsApr.liabilities['\u61c9\u4ed8\u96de\u8077\u5c31\u91d1'] || 0) : 0) + '</td>' +
         '<td class="amount">' + fmt(bsMay.liabilities ? (bsMay.liabilities['\u61c9\u4ed8\u96de\u8077\u5c31\u91d1'] || 0) : 0) + '</td>' +
@@ -1329,24 +1329,24 @@
         '<td class="amount">' + fmt((bsMay.liabilities ? (bsMay.liabilities['\u4ee3\u6536\u6b3e\u9805'] || 0) : 0) - (bsApr.liabilities ? (bsApr.liabilities['\u4ee3\u6536\u6b3e\u9805'] || 0) : 0)) + '</td>' +
         '</tr>' +
         '<tr class="subtotal">' +
-        '<td>\u8cac\u52d5\u5408\u8a08</td>' +
+        '<td>\u6d41\u52d5\u5408\u8a08</td>' +
         '<td class="amount">' + fmt(bsApr.totalLiab || 0) + '</td>' +
         '<td class="amount">' + fmt(bsMay.totalLiab || 0) + '</td>' +
         '<td class="amount">' + fmt((bsMay.totalLiab || 0) - (bsApr.totalLiab || 0)) + '</td>' +
         '</tr>' +
-        '<tr class="section-header"><td colspan="4">\u57fa\u91d1\u53ca\u7a00\u7db4</td></tr>' +
-        '<tr><td style="padding-left:32px">\u7d2f\u7a9d\u7a00\u7db4</td>' +
-        '<td class="amount">' + fmt(bsApr.equity ? (bsApr.equity['\u7d2f\u7a9d\u7a00\u7db4'] || 0) : 0) + '</td>' +
-        '<td class="amount">' + fmt(bsMay.equity ? (bsMay.equity['\u7d2f\u7a9d\u7a00\u7db4'] || 0) : 0) + '</td>' +
-        '<td class="amount">' + fmt((bsMay.equity ? (bsMay.equity['\u7d2f\u7a9d\u7a00\u7db4'] || 0) : 0) - (bsApr.equity ? (bsApr.equity['\u7d2f\u7a9d\u7a00\u7db4'] || 0) : 0)) + '</td>' +
+        '<tr class="section-header"><td colspan="4">\u57fa\u91d1\u53ca\u9918\u7d40</td></tr>' +
+        '<tr><td style="padding-left:32px">\u7d2f\u7a4d\u9918\u7d40</td>' +
+        '<td class="amount">' + fmt(bsApr.equity ? (bsApr.equity['\u7d2f\u7a4d\u9918\u7d40'] || 0) : 0) + '</td>' +
+        '<td class="amount">' + fmt(bsMay.equity ? (bsMay.equity['\u7d2f\u7a4d\u9918\u7d40'] || 0) : 0) + '</td>' +
+        '<td class="amount">' + fmt((bsMay.equity ? (bsMay.equity['\u7d2f\u7a4d\u9918\u7d40'] || 0) : 0) - (bsApr.equity ? (bsApr.equity['\u7d2f\u7a4d\u9918\u7d40'] || 0) : 0)) + '</td>' +
         '</tr>' +
-        '<tr class="positive"><td style="padding-left:32px">\u672c\u671f\u7a00\u7db4</td>' +
-        '<td class="amount">' + fmt(bsApr.equity ? (bsApr.equity['\u672c\u671f\u7a00\u7db4'] || 0) : 0) + '</td>' +
-        '<td class="amount">' + fmt(bsMay.equity ? (bsMay.equity['\u672c\u671f\u7a00\u7db4'] || 0) : 0) + '</td>' +
-        '<td class="amount">' + fmt((bsMay.equity ? (bsMay.equity['\u672c\u671f\u7a00\u7db4'] || 0) : 0) - (bsApr.equity ? (bsApr.equity['\u672c\u671f\u7a00\u7db4'] || 0) : 0)) + '</td>' +
+        '<tr class="positive"><td style="padding-left:32px">\u672c\u671f\u9918\u7d40</td>' +
+        '<td class="amount">' + fmt(bsApr.equity ? (bsApr.equity['\u672c\u671f\u9918\u7d40'] || 0) : 0) + '</td>' +
+        '<td class="amount">' + fmt(bsMay.equity ? (bsMay.equity['\u672c\u671f\u9918\u7d40'] || 0) : 0) + '</td>' +
+        '<td class="amount">' + fmt((bsMay.equity ? (bsMay.equity['\u672c\u671f\u9918\u7d40'] || 0) : 0) - (bsApr.equity ? (bsApr.equity['\u672c\u671f\u9918\u7d40'] || 0) : 0)) + '</td>' +
         '</tr>' +
         '<tr class="grand-total">' +
-        '<td>\u6df54\u5027\u5408\u8a08</td>' +
+        '<td>\u6de8\u503c\u5408\u8a08</td>' +
         '<td class="amount">' + fmt(bsApr.totalEquity || 0) + '</td>' +
         '<td class="amount">' + fmt(bsMay.totalEquity || 0) + '</td>' +
         '<td class="amount">' + fmt((bsMay.totalEquity || 0) - (bsApr.totalEquity || 0)) + '</td>' +
