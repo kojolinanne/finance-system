@@ -1158,7 +1158,7 @@
       var incKeys = Object.keys(incSum).sort(function(a, b) { return (incSum[b].janToApr || 0) - (incSum[a].janToApr || 0); });
       html += '<div class="report-card" style="margin-top:24px">' +
         '<div class="report-title">\ud83d\udcc8 \u6536\u5165\u7d50\u69cb\u5206\u6790\uff08\u4e3b\u6069\uff09</div>' +
-        '<table><thead><tr><th>\u6536\u5165\u9805\u76ee</th><th class="amount">1-4\u6708\u5408\u8a08</th><th class="amount">1-4\u6708\u6708\u5747</th><th class="amount">5\u6708</th><th class="amount">\u6bd4\u8f03</th></tr></thead><tbody>';
+        '<table><thead><tr><th>\u6536\u5165\u9805\u76ee</th><th class="amount">1-4\u6708\u5408\u8a08</th><th class="amount">1-4\u6708\u6708\u5747</th><th class="amount">5\u6708</th><th class="amount">\u8207\u6708\u5747\u5dee\u984d</th></tr></thead><tbody>';
       for (var ik = 0; ik < incKeys.length; ik++) {
         var k = incKeys[ik];
         var d = incSum[k];
@@ -1177,6 +1177,54 @@
           '<td class="amount ' + chgCls + '">' + chgStr + '</td>' +
           '</tr>';
       }
+      // 計算收入小計與特別奉獻扣減
+      var incTotalJan = main.janToApr ? main.janToApr.incomeTotal : 0;
+      var incTotalMay = main.may ? main.may.totalIncome : 0;
+      var specJan = main.janToApr ? main.janToApr.specialMission : 0;
+      var specMay = main.may ? main.may.specialMission : 0;
+      var regularJan = incTotalJan - specJan;
+      var regularMay = incTotalMay - specMay;
+      var regJanAvg = regularJan / 4;
+      var regDiff = regularMay - regJanAvg;
+      var regChg = regJanAvg > 0 ? (regDiff / regJanAvg * 100) : 0;
+      var regChgStr = (regChg !== 0 ? (regChg > 0 ? '+' : '-') + fmt(Math.abs(regDiff)) + ' (' + Math.abs(regChg).toFixed(1) + '%)' : '0 (0%)');
+      var regChgCls = regChg > 5 ? 'positive' : regChg < -5 ? 'negative' : '';
+      // 收入項目彙總（用於減項計算）
+      var incTotalByCatJan = 0, incTotalByCatMay = 0;
+      for (var ik2 = 0; ik2 < incKeys.length; ik2++) {
+        var k2 = incKeys[ik2];
+        var d2 = incSum[k2];
+        incTotalByCatJan += d2.janToApr || 0;
+        incTotalByCatMay += d2.may || 0;
+      }
+      var subJan = incTotalByCatJan;
+      var subMay = incTotalByCatMay;
+      var specInTableJan = subJan - regularJan;
+      var specInTableMay = subMay - regularMay;
+      // 收入小計列
+      html += '<tr class="subtotal">' +
+        '<td><strong>收入小計</strong></td>' +
+        '<td class="amount"><strong>' + fmt(subJan) + '</strong></td>' +
+        '<td class="amount" style="color:#718096"><strong>' + fmt(subJan / 4) + '</strong></td>' +
+        '<td class="amount"><strong>' + fmt(subMay) + '</strong></td>' +
+        '<td class="amount"><strong>-</strong></td>' +
+        '</tr>';
+      // 減：特別宣教奉獻扣減
+      html += '<tr style="background:#fff8dc">' +
+        '<td style="padding-left:48px;color:#92400e">　● 減：特別宣教奉獻扣減</td>' +
+        '<td class="amount" style="color:#92400e">' + fmt(specInTableJan) + '</td>' +
+        '<td class="amount" style="color:#92400e">' + fmt(specInTableJan / 4) + '</td>' +
+        '<td class="amount" style="color:#92400e">' + fmt(specInTableMay) + '</td>' +
+        '<td class="amount">-</td>' +
+        '</tr>';
+      // 經常性收入合計
+      html += '<tr class="grand-total">' +
+        '<td><strong>經常性收入合計</strong></td>' +
+        '<td class="amount"><strong>' + fmt(regularJan) + '</strong></td>' +
+        '<td class="amount" style="color:#718096"><strong>' + fmt(regJanAvg) + '</strong></td>' +
+        '<td class="amount"><strong>' + fmt(regularMay) + '</strong></td>' +
+        '<td class="amount ' + regChgCls + '"><strong>' + regChgStr + '</strong></td>' +
+        '</tr>';
       html += '</tbody></table></div>';
       
       // \u56db\u534a\u5206 1-4\u6708 vs 5\u6708 \u652f\u51fa\u7d50\u69cb
@@ -1197,7 +1245,7 @@
       }
       html += '<div class="report-card" style="margin-top:24px">' +
         '<div class="report-title">\ud83d\udcc9 \u652f\u51fa\u7d50\u69cb\u5206\u6790\uff08\u4e3b\u6069\uff09</div>' +
-        '<table><thead><tr><th>\u652f\u51fa\u9805\u76ee</th><th class="amount">1-4\u6708\u5408\u8a08</th><th class="amount">1-4\u6708\u6708\u5747</th><th class="amount">5\u6708</th><th class="amount">\u6bd4\u8f03</th></tr></thead><tbody>';
+        '<table><thead><tr><th>\u652f\u51fa\u9805\u76ee</th><th class="amount">1-4\u6708\u5408\u8a08</th><th class="amount">1-4\u6708\u6708\u5747</th><th class="amount">5\u6708</th><th class="amount">\u8207\u6708\u5747\u5dee\u984d</th></tr></thead><tbody>';
       // 人事費用（合計）
       var pAvg = personJanToApr / 4;
       var pChg = pAvg > 0 ? ((personMay - pAvg) / pAvg * 100) : 0;
